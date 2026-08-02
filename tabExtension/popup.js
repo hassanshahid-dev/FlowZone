@@ -317,6 +317,17 @@
                     return;
                 }
 
+                // Check Free Tier Limit (Max 3 Workspaces)
+                const session = await Auth.getUser();
+                const isPro = session.user && session.user.plan === 'pro';
+                if (!isPro && currentWorkspaces.length >= 3) {
+                    UI.showToast('⭐ Free plan limit reached (max 3 workspaces). Upgrade to Pro for unlimited workspaces!', 'error');
+                    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                        chrome.tabs.create({ url: 'https://tabflow-dashboard-eight.vercel.app/upgrade' });
+                    }
+                    return;
+                }
+
                 // Create via API with robust local fallback
                 let created = await API.createWorkspace(wsName, selectedTabs, selectedTag);
                 if (!created || created.error || !created.name || !Array.isArray(created.tabs)) {

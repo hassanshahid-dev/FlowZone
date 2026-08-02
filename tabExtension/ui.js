@@ -401,6 +401,25 @@ const UI = {
             });
         }
 
+        const session = await Auth.getUser();
+        const isPro = session.user && session.user.plan === 'pro';
+
+        if (!isPro) {
+            container.innerHTML = `
+                <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; padding: 24px 20px; text-center; margin: 12px 0;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">⭐ 🔒</div>
+                    <h3 style="color: #F59E0B; font-weight: 700; font-size: 15px; margin-bottom: 6px; text-transform: uppercase; tracking-wider: 1px;">Pro Feature Locked</h3>
+                    <p style="color: #94A3B8; font-size: 12px; margin-bottom: 16px; line-height: 1.5;">
+                        AI tab auto-grouping and topic clustering requires a <strong>TabFlow Pro</strong> account. Free accounts are limited to 3 manual workspaces.
+                    </p>
+                    <button onclick="window.open('https://tabflow-dashboard-eight.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #F59E0B, #D97706); color: #000; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); text-transform: uppercase; tracking-wider: 1px;">
+                        Upgrade to Pro ⭐
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
         container.innerHTML = `
             <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; color: ${isGeminiUsed ? '#10B981' : '#3B82F6'}; font-family: monospace;">
                 ${isGeminiUsed ? '✨ Powered by Gemini 1.5 Flash Cloud AI (Online)' : '⚡ Offline Local Rule AI Engine (0ms Latency)'}
