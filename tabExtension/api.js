@@ -1,93 +1,152 @@
+// api.js - TabFlow API Service Client
+
 const BASE_URL = `http://localhost:5000/api`;
 
 const API = {
-
-    //AUTH APIs
-
-    async register(email, password) {
-        const res = await fetch(`${BASE_URL}/auth/register`, {
-            method : 'POST',
-            headers : { 'content-Type' : 'application/json' },
-            body : JSON.stringify({ email, password})
+    async getToken() {
+        return new Promise((resolve) => {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get('token', (data) => {
+                    resolve(data.token || null);
+                });
+            } else {
+                resolve(localStorage.getItem('token') || null);
+            }
         });
-        return res.json();
+    },
+
+    async checkHealth() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch(`${BASE_URL}/workspaces`, {
+                method: 'HEAD',
+                signal: controller.signal
+            }).catch(() => null);
+            clearTimeout(timeoutId);
+            return !!res;
+        } catch {
+            return false;
+        }
+    },
+
+    // AUTH APIs
+    async register(email, password) {
+        try {
+            const res = await fetch(`${BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            return await res.json();
+        } catch (err) {
+            return { error: 'Backend network connection failed. ' + err.message };
+        }
     },
 
     async login(email, password) {
-        const res = await fetch(`${BASE_URL}/auth/login`, {
-            method : 'POST',
-            headers : { 'content-Type' : 'application/json' },
-            body : JSON.stringify( { email, password } )
-        });
-        return res.json();
-    },
-
-    //TOKEN from Local Storage
-
-    async getToken() {
-        return new Promise((resolve) => {
-            chrome.storage.local.get('token', (data) => {
-                resolve(data.token || null);
+        try {
+            const res = await fetch(`${BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
             });
-        });
+            return await res.json();
+        } catch (err) {
+            return { error: 'Backend network connection failed. ' + err.message };
+        }
     },
 
-    //Workspace APIs
-
+    // WORKSPACE APIs
     async getWorkspaces() {
-        const token = await this.getToken();
+        try {
+            const token = await this.getToken();
+            if (!token) return { error: 'No auth token found' };
 
-        const res = await fetch(`${BASE_URL}/workspaces`, {
-            method : 'GET',
-            headers : { 'Authorization' : `Bearer ${token}` }
-        });
-        return res.json();
+            const res = await fetch(`${BASE_URL}/workspaces`, {
+                method: 'GET',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                return { error: errData.error || `Server responded with status ${res.status}` };
+            }
+
+            return await res.json();
+        } catch (err) {
+            return { error: 'Network error fetching workspaces: ' + err.message };
+        }
     },
 
-    async createWorkspace(name, tabs) {
-        const token = await this.getToken();
+    async createWorkspace(name, tabs, tag = 'Indigo') {
+        try {
+            const token = await this.getToken();
+            const res = await fetch(`${BASE_URL}/workspaces`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ name, tabs, tag })
+            });
 
-        const res = await fetch(`${BASE_URL}/workspaces`, {
-            method : 'POST',
-            headers : {
-                'content-Type' : 'application/json',
-                'Authorization' : `Bearer ${token}` 
-            },
-            body : JSON.stringify( {name, tabs} )
-        });
-        return res.json();
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                return { error: errData.error || 'Failed to create workspace on backend' };
+            }
+
+            return await res.json();
+        } catch (err) {
+            return { error: 'Network error creating workspace: ' + err.message };
+        }
     },
 
     async updateWorkspace(id, data) {
-        const token = await this.getToken();
+        try {
+            const token = await this.getToken();
+            const res = await fetch(`${BASE_URL}/workspaces/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
 
-        const res = await fetch(`${BASE_URL}/workspaces/${id}`, {
-            method : 'PUT',
-            headers : {
-                'content-Type' : 'application/json',
-                'Authorization' : `Bearer ${token}`
-            },
-            body : JSON.stringify( {data} )
-        });
-        return res.json();
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                return { error: errData.error || 'Failed to update workspace' };
+            }
+
+            return await res.json();
+        } catch (err) {
+            return { error: 'Network error updating workspace: ' + err.message };
+        }
     },
 
     async deleteWorkspace(id) {
-    const token = await this.getToken();
+        try {
+            const token = await this.getToken();
+            const res = await fetch(`${BASE_URL}/workspaces/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-    console.log("Deleting:", id);
-    console.log("URL:", `${BASE_URL}/workspaces/${id}`);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                return { error: errData.error || 'Failed to delete workspace' };
+            }
 
-    const res = await fetch(`${BASE_URL}/workspaces/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            return await res.json();
+        } catch (err) {
+            return { error: 'Network error deleting workspace: ' + err.message };
         }
-    });
-
-    console.log("Status:", res.status);
-
-    return res.json();
-}
-}
+    }
+};

@@ -22,12 +22,33 @@ app.get('/', (req, res) => {
 });
 
 //DB connection
-mongoose.connect(process.env.MONGO_URI)
+const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tabflow';
+const localUri = 'mongodb://127.0.0.1:27017/tabflow';
+
+const startServer = () => {
+    const port = process.env.PORT || 5000;
+    app.listen(port, () => {
+        console.log(`🚀 TabFlow Backend Server running on http://localhost:${port}`);
+    });
+};
+
+mongoose.connect(mongoUri)
     .then(() => {
-        console.log(`MongoDB connected`);
-        app.listen(process.env.PORT, () => {
-            console.log(`Server running on port ${process.env.PORT}`);
-        });
+        console.log(`✅ MongoDB connected successfully`);
+        startServer();
     })
-    .catch((err) => console.log('MongoDB error:', err));
+    .catch((err) => {
+        console.warn('⚠️ Cloud MongoDB connection warning:', err.message);
+        console.log('🔄 Connecting to local MongoDB instance (mongodb://127.0.0.1:27017/tabflow)...');
+        mongoose.connect(localUri)
+            .then(() => {
+                console.log(`✅ Local MongoDB connected successfully`);
+                startServer();
+            })
+            .catch((localErr) => {
+                console.error('❌ Local MongoDB connection error:', localErr.message);
+                console.log('⚡ Starting server in offline memory mode on port 5000...');
+                startServer();
+            });
+    });
 

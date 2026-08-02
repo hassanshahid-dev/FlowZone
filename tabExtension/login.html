@@ -3,27 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabFlow - Login & Register</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <title>Login Page</title>
 </head>
-<body>
-    <h1>AI Tabs Manager</h1>
+<body class="standalone-auth-body">
+    <div class="standalone-auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="brand-logo-large" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <svg width="36" height="28" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="14" y="10" width="62" height="20" rx="8" transform="rotate(-6 45 20)" fill="#1D4ED8" />
+                        <rect x="22" y="28" width="62" height="20" rx="8" transform="rotate(-3 53 38)" fill="#3B82F6" />
+                        <rect x="30" y="46" width="62" height="20" rx="8" transform="rotate(-1 61 56)" fill="#10B981" />
+                    </svg>
+                    <span>TabFlow</span>
+                </div>
+                <p id="authSubtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Save tabs, suspend memory leaks, and sync workspaces</p>
+            </div>
 
-    <div id="authForm">
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="loginTabBtn">Login</button>
+                <button class="auth-tab-btn" id="registerTabBtn">Register</button>
+            </div>
 
-        <input type="email" id="emailInput" placeholder="Email" />
-        <input type="password" id="passwordInput" placeholder="Password" />
+            <form id="standaloneAuthForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="emailInput">Email Address</label>
+                    <input type="email" id="emailInput" placeholder="name@example.com" required />
+                </div>
 
-        <div class="workspace-buttons">
-            <button id="loginBtn">Login</button>
-            <button id="registerBtn">Register</button>
+                <div class="form-group">
+                    <label for="passwordInput">Password</label>
+                    <input type="password" id="passwordInput" placeholder="••••••••" required />
+                </div>
+
+                <div class="auth-error-msg" id="authError" style="display:none;"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-auth-submit" id="loginBtn">Log In</button>
+                    <button type="button" class="btn-auth-submit" id="registerBtn" style="display:none; background: var(--accent-green);">Create Account</button>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <button type="button" class="skip-link" id="continueOfflineBtn">Continue in Offline Mode &rarr;</button>
+            </div>
         </div>
-
-        <p id="authError" style="color:red; display:none;"></p>
-
     </div>
 
     <script src="api.js"></script>
     <script src="auth.js"></script>
+    <script>
+        let currentMode = 'login';
+        const loginTab = document.getElementById('loginTabBtn');
+        const registerTab = document.getElementById('registerTabBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const authError = document.getElementById('authError');
+
+        loginTab.addEventListener('click', () => setMode('login'));
+        registerTab.addEventListener('click', () => setMode('register'));
+
+        function setMode(mode) {
+            currentMode = mode;
+            authError.style.display = 'none';
+            if (mode === 'login') {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginBtn.style.display = 'block';
+                registerBtn.style.display = 'none';
+            } else {
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+                registerBtn.style.display = 'block';
+                loginBtn.style.display = 'none';
+            }
+        }
+
+        async function submitAuth() {
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            
+            authError.style.display = 'none';
+            const res = await Auth.handleAuth(currentMode, email, password);
+
+            if (res.error) {
+                authError.textContent = res.error;
+                authError.style.display = 'block';
+            } else {
+                window.location.href = 'popup.html';
+            }
+        }
+
+        loginBtn.addEventListener('click', submitAuth);
+        registerBtn.addEventListener('click', submitAuth);
+        document.getElementById('continueOfflineBtn').addEventListener('click', () => {
+            window.location.href = 'popup.html';
+        });
+    </script>
 </body>
 </html>

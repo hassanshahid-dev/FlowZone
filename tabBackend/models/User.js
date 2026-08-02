@@ -16,6 +16,18 @@ const userSchema = new mongoose.Schema({
         enum: ['free', 'pro'],
         default: 'free'
     },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    otpCode: {
+        type: String,
+        default: null
+    },
+    otpExpiresAt: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

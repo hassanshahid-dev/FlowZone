@@ -1,205 +1,500 @@
-// ui.js
+// ui.js - TabFlow Clean UI Renderer Engine
 
-function displayWorkspaces(workspaces) {
+const UI = {
+    // =========================================================================
+    // 1. WORKSPACES LIST RENDERER
+    // =========================================================================
+    displayWorkspaces(workspaces, filter = 'all', searchQuery = '') {
+        const listContainer = document.getElementById('workspacesList');
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
 
-    const list = document.getElementById('list');
-    list.innerHTML = '';
-
-    if (workspaces.length === 0) {
-        list.innerHTML = '<p>No workspaces yet.</p>';
-        return;
-    }
-
-    // Split into active and closed workspaces
-    const active = workspaces.filter(ws => ws.isActive);
-    const closed = workspaces.filter(ws => !ws.isActive);
-
-
-    // ========================
-    // ACTIVE WORKSPACES
-    // ========================
-    if (active.length > 0) {
-        const activeHeader = document.createElement('p');
-        activeHeader.textContent = '🟢 Active';
-        activeHeader.classList.add('section-header');
-        list.appendChild(activeHeader);
-
-        active.forEach(ws => renderWorkspaceCard(ws, list));
-    }
-
-
-    // ========================
-    // CLOSED WORKSPACES
-    // ========================
-    if (closed.length > 0) {
-        const closedHeader = document.createElement('p');
-        closedHeader.textContent = '⚪ Closed';
-        closedHeader.classList.add('section-header');
-        list.appendChild(closedHeader);
-
-        closed.forEach(ws => renderWorkspaceCard(ws, list));
-    }
-
-}
-
-
-function renderWorkspaceCard(ws, list) {
-
-    const li = document.createElement('li');
-
-    // In renderWorkspaceCard, after creating the li element, add:
-    if (!ws.isActive) {
-        li.classList.add('closed');
-    }
-
-    // ========================
-    // RAM SAVINGS DISPLAY
-    // Rough estimate: ~150MB per tab
-    // ========================
-    const estimatedRAM = ws.isActive
-        ? ''
-        : `💾 Saving ~${ws.tabs.length * 150}MB RAM`;
-
-    li.innerHTML = `
-        <div class="workspace-header">
-            <strong>${ws.name}</strong>
-            <span class="tab-count">${ws.tabs.length} tabs</span>
-        </div>
-        <small>${new Date(ws.createdAt).toLocaleDateString()}</small>
-        ${estimatedRAM ? `<p class="ram-savings">${estimatedRAM}</p>` : ''}
-        <ul class="tab-list">
-            ${ws.tabs.slice(0, 3).map(t => `
-                <li class="tab-item" title="${t.url}">
-                    <img src="https://www.google.com/s2/favicons?domain=${t.url}" 
-                         width="14" height="14" />
-                    ${t.title.length > 40 ? t.title.slice(0, 40) + '...' : t.title}
-                </li>
-            `).join('')}
-            ${ws.tabs.length > 3 ? `<li class="tab-item muted">+${ws.tabs.length - 3} more</li>` : ''}
-        </ul>
-    `;
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.classList.add('workspace-buttons');
-
-
-    // ========================
-    // RESTORE BUTTON
-    // Only show on closed workspaces
-    // ========================
-    if (!ws.isActive) {
-        const restore = document.createElement('button');
-        restore.textContent = 'Restore';
-        restore.classList.add('btn-primary');
-
-        restore.addEventListener('click', async () => {
-            await restoreWorkspace(ws);
-        });
-
-        buttonContainer.appendChild(restore);
-    }
-
-
-    // ========================
-    // CLOSE BUTTON
-    // Only show on active workspaces
-    // ========================
-    if (ws.isActive) {
-        const close = document.createElement('button');
-        close.textContent = 'Close & Save';
-        close.classList.add('btn-secondary');
-
-        close.addEventListener('click', async () => {
-            await suspendWorkspace(ws);
-        });
-
-        buttonContainer.appendChild(close);
-    }
-
-
-    // ========================
-    // DELETE BUTTON
-    // Always visible
-    // ========================
-    const del = document.createElement('button');
-    del.textContent = 'Delete';
-    del.classList.add('btn-danger');
-
-    del.addEventListener('click', async () => {
-        if (!confirm('Delete this workspace?')) return;
-
-        await API.deleteWorkspace(ws.id || ws._id);
-        const updated = await Storage.deleteWorkspace(ws.id || ws._id);
-        displayWorkspaces(updated);
-    });
-
-    buttonContainer.appendChild(del);
-    li.appendChild(buttonContainer);
-    list.appendChild(li);
-
-}
-
-
-// ========================
-// SUSPEND WORKSPACE
-// Close tabs in browser, mark inactive
-// ========================
-async function suspendWorkspace(ws) {
-
-    const workspaceUrls = ws.tabs.map(t => t.url);
-
-    chrome.tabs.query({ currentWindow: true }, async (currentTabs) => {
-
-        const tabsToClose = currentTabs
-            .filter(tab => workspaceUrls.includes(tab.url))
-            .map(tab => tab.id);
-
-        if (tabsToClose.length > 0) {
-            chrome.tabs.remove(tabsToClose);
+        if (!Array.isArray(workspaces) || workspaces.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <h4>No Workspaces Created</h4>
+                    <p>Click "+ New" above to save your open tabs into a workspace.</p>
+                </div>
+            `;
+            this.updateHeaderStats(0, 0, 0, 0);
+            return;
         }
 
-        const id = ws.id || ws._id;
+        // Apply Search Filter
+        let filtered = workspaces;
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(ws => {
+                const nameMatch = ws.name && ws.name.toLowerCase().includes(q);
+                const tabMatch = ws.tabs && ws.tabs.some(t => 
+                    (t.title && t.title.toLowerCase().includes(q)) || 
+                    (t.url && t.url.toLowerCase().includes(q))
+                );
+                return nameMatch || tabMatch;
+            });
+        }
 
-        // Update backend
-        await API.updateWorkspace(id, { isActive: false });
+        // Apply Filter Select
+        if (filter === 'active') {
+            filtered = filtered.filter(ws => ws.isActive);
+        } else if (filter === 'closed') {
+            filtered = filtered.filter(ws => !ws.isActive);
+        } else if (filter === 'pinned') {
+            filtered = filtered.filter(ws => ws.isPinned);
+        }
 
-        // Update local
-        const updated = await Storage.closeWorkspace(id);
-        displayWorkspaces(updated);
+        // Sort: Pinned first, then by updatedAt descending
+        filtered.sort((a, b) => {
+            if (a.isPinned !== b.isPinned) return b.isPinned ? 1 : -1;
+            return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+        });
 
-    });
+        // Compute Hero Stats
+        const activeCount = workspaces.filter(ws => ws.isActive).length;
+        const closedCount = workspaces.filter(ws => !ws.isActive).length;
+        let totalTabs = 0;
+        let suspendedTabs = 0;
 
-}
+        workspaces.forEach(ws => {
+            const count = (ws.tabs || []).length;
+            totalTabs += count;
+            if (!ws.isActive) suspendedTabs += count;
+        });
 
+        const totalRamSavedMB = suspendedTabs * 150;
+        this.updateHeaderStats(totalRamSavedMB, activeCount, closedCount, totalTabs);
 
-// ========================
-// RESTORE WORKSPACE
-// Reopen tabs, mark active
-// ========================
-async function restoreWorkspace(ws) {
+        if (filtered.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <h4>No Matching Workspaces</h4>
+                    <p>Try adjusting your search query or filter selection.</p>
+                </div>
+            `;
+            return;
+        }
 
-    // Open tabs that aren't already open
-    chrome.tabs.query({ currentWindow: true }, async (currentTabs) => {
+        filtered.forEach(ws => {
+            const card = this.createWorkspaceCard(ws);
+            listContainer.appendChild(card);
+        });
+    },
 
-        const currentUrls = currentTabs.map(tab => tab.url);
+    updateHeaderStats(ramMB, activeCount, suspendedCount, totalTabs) {
+        const ramEl = document.getElementById('totalRamSaved');
+        const actEl = document.getElementById('statActiveCount');
+        const suspEl = document.getElementById('statSuspendedCount');
+        const tabEl = document.getElementById('statTabsCount');
 
-        ws.tabs.forEach(tab => {
-            if (!currentUrls.includes(tab.url)) {
-                chrome.tabs.create({ url: tab.url, active: false });
+        if (ramEl) ramEl.textContent = ramMB >= 1024 ? `${(ramMB / 1024).toFixed(1)} GB` : `${ramMB} MB`;
+        if (actEl) actEl.textContent = activeCount;
+        if (suspEl) suspEl.textContent = suspendedCount;
+        if (tabEl) tabEl.textContent = totalTabs;
+
+        const fillEl = document.getElementById('ramMeterFill');
+        const pctEl = document.getElementById('ramMeterPercentage');
+        if (fillEl && pctEl) {
+            const pct = Math.min(100, Math.round((ramMB / 2000) * 100));
+            fillEl.style.width = pct + '%';
+            pctEl.textContent = `${pct}% Memory Efficient`;
+        }
+    },
+
+    createWorkspaceCard(ws) {
+        const id = ws._id || ws.id;
+        const isClosed = !ws.isActive;
+        const isPinned = !!ws.isPinned;
+        const tag = ws.tag || 'Blue';
+        const tagColors = {
+            Blue: '#3B82F6', Green: '#10B981', Amber: '#F59E0B', Rose: '#EF4444'
+        };
+        const tagColor = tagColors[tag] || tagColors.Blue;
+        const tabCount = (ws.tabs || []).length;
+        const ramSavings = isClosed ? `💾 ~${tabCount * 150}MB saved` : '';
+
+        const card = document.createElement('div');
+        card.className = `workspace-card ${isClosed ? 'closed' : 'active'} ${isPinned ? 'pinned' : ''}`;
+        card.dataset.id = id;
+
+        const tabsToDisplay = (ws.tabs || []).slice(0, 4);
+        const hasMore = tabCount > 4;
+
+        card.innerHTML = `
+            <div class="card-header">
+                <div class="card-title-group">
+                    <span class="tag-dot" style="background:${tagColor};"></span>
+                    <span class="ws-title">${this.escapeHTML(ws.name)}</span>
+                    <span class="ws-status-badge ${isClosed ? 'closed' : 'active'}">
+                        ${isClosed ? '⚪ Suspended' : '🟢 Active'}
+                    </span>
+                </div>
+                <div class="ws-actions-top">
+                    <button class="btn-icon-xs ${isPinned ? 'active-pin' : ''}" title="${isPinned ? 'Unpin' : 'Pin'}" data-action="pin">
+                        ${isPinned ? '⭐' : '☆'}
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-meta">
+                <span>${tabCount} ${tabCount === 1 ? 'tab' : 'tabs'}</span>
+                <span>•</span>
+                <span>${this.formatDate(ws.updatedAt || ws.createdAt)}</span>
+                ${ramSavings ? `<span>•</span><span class="ram-saved-tag">${ramSavings}</span>` : ''}
+            </div>
+
+            <div class="ws-tab-preview">
+                ${tabsToDisplay.map(t => `
+                    <div class="tab-item-row" data-url="${this.escapeHTML(t.url)}">
+                        <div class="tab-info">
+                            <img class="tab-favicon" src="${t.favIconUrl || getFaviconFromUrl(t.url)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\'><circle cx=\'8\' cy=\'8\' r=\'6\' fill=\'%23555\'/></svg>'" />
+                            <span class="tab-title-text" title="${this.escapeHTML(t.title || t.url)}">${this.escapeHTML(t.title || t.url)}</span>
+                        </div>
+                        <div class="tab-quick-actions">
+                            <button class="btn-icon-xs" title="Open Tab" data-action="open-tab" data-url="${this.escapeHTML(t.url)}">↗</button>
+                            <button class="btn-icon-xs" title="Copy URL" data-action="copy-tab" data-url="${this.escapeHTML(t.url)}">📋</button>
+                            <button class="btn-icon-xs" title="Remove" data-action="remove-tab" data-url="${this.escapeHTML(t.url)}">&times;</button>
+                        </div>
+                    </div>
+                `).join('')}
+                ${hasMore ? `<div class="tab-item-row" style="color:var(--text-muted); font-size:11px; padding:4px 0;">+${tabCount - 4} more tabs</div>` : ''}
+            </div>
+
+            <div class="card-buttons">
+                ${isClosed 
+                    ? `<button class="btn-card-green" data-action="restore">Restore Workspace</button>`
+                    : `<button class="btn-card-secondary" data-action="suspend">Close & Suspend</button>`
+                }
+                <button class="btn-card-secondary" data-action="add-current">Add Active Tab</button>
+                <button class="btn-card-danger" data-action="delete" title="Delete Workspace">Delete</button>
+            </div>
+        `;
+
+        card.addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const targetUrl = btn.dataset.url;
+
+            e.stopPropagation();
+
+            if (action === 'pin') {
+                await Storage.togglePinWorkspace(id);
+                const updated = await Storage.getWorkspaces();
+                this.displayWorkspaces(updated);
+            } else if (action === 'suspend') {
+                await this.suspendWorkspace(ws);
+            } else if (action === 'restore') {
+                await this.restoreWorkspace(ws);
+            } else if (action === 'delete') {
+                if (confirm(`Delete workspace "${ws.name}"?`)) {
+                    await API.deleteWorkspace(id);
+                    const updated = await Storage.deleteWorkspace(id);
+                    this.displayWorkspaces(updated);
+                    this.showToast(`Deleted "${ws.name}"`, 'info');
+                }
+            } else if (action === 'add-current') {
+                getTabs(async (currentTabs) => {
+                    const activeTab = currentTabs.find(t => t.active) || currentTabs[0];
+                    if (activeTab) {
+                        const exists = (ws.tabs || []).some(t => t.url === activeTab.url);
+                        if (!exists) {
+                            ws.tabs.push({ title: activeTab.title, url: activeTab.url, favIconUrl: activeTab.favIconUrl });
+                            await API.updateWorkspace(id, { tabs: ws.tabs });
+                            await Storage.updateWorkspace(id, { tabs: ws.tabs });
+                            const updated = await Storage.getWorkspaces();
+                            this.displayWorkspaces(updated);
+                            this.showToast(`Added tab to "${ws.name}"`, 'success');
+                        } else {
+                            this.showToast('Tab already in workspace', 'info');
+                        }
+                    }
+                });
+            } else if (action === 'open-tab' && targetUrl) {
+                openTabs([targetUrl]);
+            } else if (action === 'copy-tab' && targetUrl) {
+                navigator.clipboard.writeText(targetUrl);
+                this.showToast('URL copied to clipboard', 'success');
+            } else if (action === 'remove-tab' && targetUrl) {
+                const updated = await Storage.removeTabFromWorkspace(id, targetUrl);
+                await API.updateWorkspace(id, { tabs: (ws.tabs || []).filter(t => t.url !== targetUrl) });
+                this.displayWorkspaces(updated);
+                this.showToast('Removed tab', 'info');
             }
         });
 
-        const id = ws.id || ws._id;
+        return card;
+    },
 
-        // Mark active in backend
-        await API.updateWorkspace(id, { isActive: true });
+    async suspendWorkspace(ws) {
+        const id = ws._id || ws.id;
+        const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
 
-        // Mark active in local
-        const updated = await Storage.activateWorkspace(id)
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+            chrome.tabs.query({}, (currentTabs) => {
+                const tabsToClose = (currentTabs || [])
+                    .filter(tab => tab.url && targetUrls.some(target => isUrlMatch(tab.url, target)))
+                    .map(tab => tab.id)
+                    .filter(tabId => typeof tabId === 'number');
 
-        await Storage.saveWorkspaces(updated);
-        displayWorkspaces(updated);
+                closeTabs(tabsToClose, async () => {
+                    API.updateWorkspace(id, { isActive: false });
+                    const updated = await Storage.closeWorkspace(id);
+                    this.displayWorkspaces(updated);
+                    const ramSaved = (ws.tabs || []).length * 150;
+                    const closedCount = tabsToClose.length;
+                    this.showToast(`Suspended "${ws.name}" (${closedCount} tabs closed, ~${ramSaved}MB RAM saved)`, 'success');
+                });
+            });
+        } else {
+            API.updateWorkspace(id, { isActive: false });
+            Storage.closeWorkspace(id).then(updated => this.displayWorkspaces(updated));
+        }
+    },
 
-    });
+    async restoreWorkspace(ws) {
+        const id = ws._id || ws.id;
+        const urlsToOpen = (ws.tabs || []).map(t => t.url).filter(Boolean);
 
-}
+        if (urlsToOpen.length > 0) {
+            openTabs(urlsToOpen);
+        }
+
+        API.updateWorkspace(id, { isActive: true });
+        Storage.activateWorkspace(id).then(updated => {
+            this.displayWorkspaces(updated);
+            this.showToast(`Restored "${ws.name}" (${urlsToOpen.length} tabs opened)`, 'success');
+        });
+    },
+
+    renderOpenTabs(tabs, searchQuery = '') {
+        const container = document.getElementById('openTabsList');
+        const countBadge = document.getElementById('openTabsCount');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (countBadge) countBadge.textContent = `${tabs.length} Tabs`;
+
+        let filtered = tabs;
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            filtered = tabs.filter(t => 
+                (t.title && t.title.toLowerCase().includes(q)) || 
+                (t.url && t.url.toLowerCase().includes(q))
+            );
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>No open tabs match search query.</p></div>`;
+            return;
+        }
+
+        filtered.forEach(tab => {
+            const card = document.createElement('div');
+            card.className = 'open-tab-card';
+            card.innerHTML = `
+                <div class="open-tab-left">
+                    <input type="checkbox" class="tab-checkbox" data-url="${this.escapeHTML(tab.url)}" data-title="${this.escapeHTML(tab.title)}" checked />
+                    <img class="tab-favicon" src="${tab.favIconUrl || getFaviconFromUrl(tab.url)}" />
+                    <span class="tab-title-text" title="${this.escapeHTML(tab.title)}">${this.escapeHTML(tab.title)}</span>
+                </div>
+                <button class="btn-icon-xs" title="Close Tab" data-action="close-open-tab" data-id="${tab.id}">&times;</button>
+            `;
+
+            card.querySelector('[data-action="close-open-tab"]')?.addEventListener('click', () => {
+                if (tab.id) {
+                    closeTabs([tab.id], () => {
+                        getTabs(updatedTabs => this.renderOpenTabs(updatedTabs));
+                    });
+                }
+            });
+
+            container.appendChild(card);
+        });
+    },
+
+    async renderAiCategorization(tabs) {
+        const container = document.getElementById('aiPreviewContainer');
+        if (!container) return;
+        container.innerHTML = '<div class="empty-state"><p>Analyzing tabs with AI Engine...</p></div>';
+
+        if (!tabs || tabs.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>No open tabs available to analyze.</p></div>`;
+            return;
+        }
+
+        const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+        const geminiApiKey = (typeof localStorage !== 'undefined' && localStorage.getItem('GEMINI_API_KEY')) || '';
+
+        let categories = {
+            'Code & Engineering': [],
+            'Documentation & Docs': [],
+            'Media & Entertainment': [],
+            'Social & Messaging': [],
+            'Shopping & Finance': [],
+            'General Web': []
+        };
+        let isGeminiUsed = false;
+
+        // Try Google Gemini 1.5 Flash API if online & key available
+        if (isOnline && geminiApiKey) {
+            try {
+                const tabTitles = tabs.map(t => ({ id: t.id, title: t.title, url: t.url }));
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Categorize the following list of browser tabs into json categories ('Code & Engineering', 'Documentation & Docs', 'Media & Entertainment', 'Social & Messaging', 'Shopping & Finance', 'General Web'). Output raw JSON mapping tab index to category name.\nTabs: ${JSON.stringify(tabTitles)}`
+                            }]
+                        }]
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsedMap = JSON.parse(jsonMatch[0]);
+                        tabs.forEach((tab, idx) => {
+                            const cat = parsedMap[idx] || parsedMap[tab.title] || 'General Web';
+                            if (!categories[cat]) categories[cat] = [];
+                            categories[cat].push(tab);
+                        });
+                        isGeminiUsed = true;
+                    }
+                }
+            } catch (err) {
+                console.log('Gemini API fallback to offline rules:', err);
+            }
+        }
+
+        // Offline Rule-based Local AI Fallback Engine
+        if (!isGeminiUsed) {
+            categories = {
+                'Code & Engineering': [],
+                'Documentation & Docs': [],
+                'Media & Entertainment': [],
+                'Social & Messaging': [],
+                'Shopping & Finance': [],
+                'General Web': []
+            };
+
+            tabs.forEach(tab => {
+                const url = (tab.url || '').toLowerCase();
+                if (url.includes('github') || url.includes('stackoverflow') || url.includes('react.dev') || url.includes('npm') || url.includes('gitlab')) {
+                    categories['Code & Engineering'].push(tab);
+                } else if (url.includes('wikipedia') || url.includes('medium') || url.includes('notion') || url.includes('docs.google') || url.includes('arxiv')) {
+                    categories['Documentation & Docs'].push(tab);
+                } else if (url.includes('youtube') || url.includes('netflix') || url.includes('spotify') || url.includes('twitch')) {
+                    categories['Media & Entertainment'].push(tab);
+                } else if (url.includes('twitter') || url.includes('x.com') || url.includes('reddit') || url.includes('discord') || url.includes('slack') || url.includes('linkedin')) {
+                    categories['Social & Messaging'].push(tab);
+                } else if (url.includes('amazon') || url.includes('ebay') || url.includes('stripe') || url.includes('paypal')) {
+                    categories['Shopping & Finance'].push(tab);
+                } else {
+                    categories['General Web'].push(tab);
+                }
+            });
+        }
+
+        container.innerHTML = `
+            <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; color: ${isGeminiUsed ? '#10B981' : '#3B82F6'}; font-family: monospace;">
+                ${isGeminiUsed ? '✨ Powered by Gemini 1.5 Flash Cloud AI (Online)' : '⚡ Offline Local Rule AI Engine (0ms Latency)'}
+            </div>
+        `;
+
+        Object.entries(categories).forEach(([catName, catTabs]) => {
+            if (catTabs.length === 0) return;
+
+            const card = document.createElement('div');
+            card.className = 'workspace-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="ws-title">${catName}</span>
+                        <span class="ws-status-badge active">${catTabs.length} Tabs</span>
+                    </div>
+                    <button class="btn-primary-sm" data-action="save-ai-cat">Save Workspace</button>
+                </div>
+                <div class="ws-tab-preview">
+                    ${catTabs.map(t => `
+                        <div class="tab-item-row">
+                            <div class="tab-info">
+                                <img class="tab-favicon" src="${t.favIconUrl || getFaviconFromUrl(t.url)}" />
+                                <span class="tab-title-text">${this.escapeHTML(t.title)}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            card.querySelector('[data-action="save-ai-cat"]').addEventListener('click', async () => {
+                let newWs = await API.createWorkspace(catName, catTabs, 'Blue');
+                if (!newWs || newWs.error || !newWs.name || !Array.isArray(newWs.tabs)) {
+                    newWs = {
+                        _id: 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        name: catName,
+                        tabs: catTabs,
+                        tag: 'Blue',
+                        isActive: true,
+                        isPinned: false,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                }
+                await Storage.addWorkspace(newWs);
+                const updated = await Storage.getWorkspaces();
+                this.displayWorkspaces(updated);
+                this.showToast(`Saved AI Workspace "${catName}"`, 'success');
+            });
+
+            container.appendChild(card);
+        });
+    },
+
+    showToast(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <span>${this.escapeHTML(message)}</span>
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px;">&times;</button>
+        `;
+
+        toast.querySelector('button').addEventListener('click', () => toast.remove());
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, duration);
+    },
+
+    escapeHTML(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
+
+    formatDate(dateStr) {
+        if (!dateStr) return 'Recently';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return 'Recently';
+        const diffMs = Date.now() - d.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        return d.toLocaleDateString();
+    }
+};

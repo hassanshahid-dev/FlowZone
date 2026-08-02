@@ -2,26 +2,343 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabFlow - AI Workspace & Tab Manager</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <title>AI Tabs Manager</title>
 </head>
 <body>
+    <div id="appContainer">
 
-    <div class="top-bar">
-    <h1>AI Tabs Manager</h1>
-    <button id="logoutBtn">Logout</button>
-</div>
+        <!-- ===================================== -->
+        <!-- HEADER BAR                            -->
+        <!-- ===================================== -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon-svg" style="display:flex; align-items:center;">
+                    <svg width="28" height="22" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="14" y="10" width="62" height="20" rx="8" transform="rotate(-6 45 20)" fill="#1D4ED8" />
+                        <rect x="22" y="28" width="62" height="20" rx="8" transform="rotate(-3 53 38)" fill="#3B82F6" />
+                        <rect x="30" y="46" width="62" height="20" rx="8" transform="rotate(-1 61 56)" fill="#10B981" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>TabFlow <span class="badge-ai">AI</span></h1>
+                </div>
+            </div>
 
-    <input type="text" id="workSpaceInput" placeholder="Workspace Name" />
-    <button id="createWorkSpace">Create Workspace</button>
+            <div class="header-actions">
+                <div class="connection-status" id="connectionStatus" title="Checking Backend Connection...">
+                    <span class="status-dot offline"></span>
+                    <span class="status-label" id="statusText">Offline Mode</span>
+                </div>
 
-    <ul id="list"></ul>
+                <button class="btn-icon" id="quickSyncBtn" title="Sync with Cloud Backend">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                </button>
 
+                <div class="user-menu-wrapper">
+                    <button class="avatar-btn" id="userMenuBtn" title="Account Settings">
+                        <span id="userAvatarChar">G</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="user-email" id="dropdownEmail">Guest User</span>
+                            <span class="user-plan-badge" id="dropdownPlan">Free Tier</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" id="dropdownAuthBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                            <span id="dropdownAuthText">Log In / Register</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===================================== -->
+        <!-- MAIN DASHBOARD CONTENT                -->
+        <!-- ===================================== -->
+        <main id="mainDashboardView">
+            
+            <!-- RAM Savings & Quick Stats Banner -->
+            <div class="hero-stats-card">
+                <div class="stats-left">
+                    <div class="ram-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M6 5v3M10 5v3M14 5v3M18 5v3M2 9h20v6H2z"/></svg>
+                        RAM Saver
+                    </div>
+                    <div class="ram-amount" id="totalRamSaved">0 MB</div>
+                    <div class="ram-subtext">Memory saved by suspended tab sessions</div>
+                </div>
+                <div class="stats-right">
+                    <div class="mini-stat">
+                        <span class="stat-num" id="statActiveCount">0</span>
+                        <span class="stat-lbl">Active</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="stat-num" id="statSuspendedCount">0</span>
+                        <span class="stat-lbl">Suspended</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="stat-num" id="statTabsCount">0</span>
+                        <span class="stat-lbl">Tabs</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="workspaces">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Workspaces
+                </button>
+                <button class="nav-tab" data-tab="openTabs">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    Open Tabs
+                </button>
+                <button class="nav-tab" data-tab="aiGroup">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    AI Auto-Group
+                </button>
+                <button class="nav-tab" data-tab="analytics">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </button>
+                <button class="nav-tab" data-tab="settings">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings
+                </button>
+            </nav>
+
+            <!-- Search & Controls Bar -->
+            <div class="controls-bar" id="searchControlsBar">
+                <div class="search-box">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="searchInput" placeholder="Search workspaces & tabs..." />
+                    <button class="clear-search-btn" id="clearSearchBtn" style="display:none;">&times;</button>
+                </div>
+
+                <select id="filterSelect" class="filter-select">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="closed">Suspended</option>
+                    <option value="pinned">Pinned</option>
+                </select>
+
+                <button class="btn-primary-solid" id="openCreateModalBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>New</span>
+                </button>
+            </div>
+
+            <!-- VIEW 1: WORKSPACES LIST -->
+            <section class="tab-view active" id="view-workspaces">
+                <div id="workspacesList" class="workspace-card-grid"></div>
+            </section>
+
+            <!-- VIEW 2: OPEN TABS INSPECTOR -->
+            <section class="tab-view" id="view-openTabs">
+                <div class="open-tabs-header">
+                    <div class="open-tabs-title">
+                        <h3>Current Open Tabs</h3>
+                        <span class="badge-neutral" id="openTabsCount">0 Tabs</span>
+                    </div>
+                    <div class="open-tabs-actions">
+                        <button class="btn-secondary-sm" id="selectAllOpenTabsBtn">Select All</button>
+                        <button class="btn-primary-sm" id="saveSelectedAsWorkspaceBtn">
+                            Save Selection
+                        </button>
+                    </div>
+                </div>
+                <div id="openTabsList" class="open-tabs-grid"></div>
+            </section>
+
+            <!-- VIEW 3: AI AUTO-GROUP -->
+            <section class="tab-view" id="view-aiGroup">
+                <div class="ai-hero-box">
+                    <div class="ai-hero-icon">🤖</div>
+                    <h3>Smart AI Tab Organizer</h3>
+                    <p>Analyze open tabs and group them into categorized workspaces automatically.</p>
+                    <button class="btn-ai-sparkle" id="runAiGroupingBtn">
+                        Auto-Group Open Tabs
+                    </button>
+                </div>
+                <div id="aiPreviewContainer" class="ai-preview-grid"></div>
+            </section>
+
+            <!-- VIEW 4: RAM ANALYTICS -->
+            <section class="tab-view" id="view-analytics">
+                <div class="analytics-container">
+                    <div class="analytics-card">
+                        <h4>RAM Savings Overview</h4>
+                        <div class="ram-meter-bar-container">
+                            <div class="ram-meter-fill" id="ramMeterFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="meter-labels">
+                            <span>0 MB</span>
+                            <span id="ramMeterPercentage">0% Memory Efficient</span>
+                            <span>2000 MB+</span>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h4>Tab Efficiency Metrics</h4>
+                        <div class="efficiency-stats">
+                            <div class="stat-row">
+                                <span>Average Tabs per Workspace:</span>
+                                <strong id="avgTabsPerWs">0</strong>
+                            </div>
+                            <div class="stat-row">
+                                <span>Estimated RAM Saved per Tab:</span>
+                                <strong>~150 MB</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 5: SETTINGS -->
+            <section class="tab-view" id="view-settings">
+                <div class="settings-container">
+                    <div class="settings-group">
+                        <h3>Data & Sync</h3>
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Backend Cloud API</strong>
+                                <span>http://localhost:5000/api</span>
+                            </div>
+                            <span class="status-pill" id="settingsBackendStatus">Connecting...</span>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Backup Workspaces</strong>
+                                <span>Export workspaces as a JSON file</span>
+                            </div>
+                            <button class="btn-secondary-sm" id="exportBackupBtn">Export JSON</button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Restore Workspaces</strong>
+                                <span>Import workspaces from a JSON file</span>
+                            </div>
+                            <button class="btn-secondary-sm" id="triggerImportJsonBtn">Import JSON</button>
+                            <input type="file" id="importJsonFileInput" accept=".json" style="display:none;" />
+                        </div>
+                    </div>
+
+                    <div class="settings-group danger-zone">
+                        <h3>Reset Options</h3>
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Clear Local Cache</strong>
+                                <span>Resets locally stored workspaces</span>
+                            </div>
+                            <button class="btn-danger-sm" id="clearLocalDataBtn">Clear Cache</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ===================================== -->
+        <!-- AUTH OVERLAY                          -->
+        <!-- ===================================== -->
+        <div id="authOverlay" class="auth-overlay" style="display:none;">
+            <div class="auth-card">
+                <button class="auth-close-btn" id="closeAuthOverlayBtn">&times;</button>
+                
+                <div class="auth-header">
+                    <div class="auth-logo">TabFlow</div>
+                    <p id="authSubtitle">Log in to sync workspaces across devices</p>
+                </div>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab-btn active" id="authModeLoginBtn">Login</button>
+                    <button class="auth-tab-btn" id="authModeRegisterBtn">Register</button>
+                </div>
+
+                <form id="authForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="authEmail">Email Address</label>
+                        <input type="email" id="authEmail" placeholder="name@example.com" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="authPassword">Password</label>
+                        <input type="password" id="authPassword" placeholder="••••••••" required />
+                    </div>
+
+                    <div class="auth-error-msg" id="authErrorMsg" style="display:none;"></div>
+
+                    <button type="submit" class="btn-auth-submit" id="authSubmitBtn">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===================================== -->
+        <!-- MODALS                                -->
+        <!-- ===================================== -->
+        
+        <!-- CREATE WORKSPACE MODAL -->
+        <div class="modal-overlay" id="createWorkspaceModal" style="display:none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>Create New Workspace</h3>
+                    <button class="modal-close" id="closeCreateModalBtn">&times;</button>
+                </div>
+                <div class="modal-body" style="margin-top: 14px;">
+                    <div class="form-group">
+                        <label>Workspace Name</label>
+                        <input type="text" id="newWsNameInput" placeholder="e.g. Work Session, Research" autofocus />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Color Tag</label>
+                        <div class="color-tag-picker" id="tagPicker">
+                            <button class="tag-opt active" data-tag="Blue" style="background:#3B82F6;" title="Blue"></button>
+                            <button class="tag-opt" data-tag="Green" style="background:#10B981;" title="Green"></button>
+                            <button class="tag-opt" data-tag="Amber" style="background:#F59E0B;" title="Amber"></button>
+                            <button class="tag-opt" data-tag="Rose" style="background:#EF4444;" title="Rose"></button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row" style="display:flex; justify-content:space-between; align-items:center;">
+                            <label>Include Tabs</label>
+                            <span class="sub-label" id="modalSelectedTabsCount" style="font-size:11px; color:var(--text-muted);">0 selected</span>
+                        </div>
+                        <div class="modal-tab-checklist" id="modalTabChecklist"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelCreateModalBtn">Cancel</button>
+                    <button class="btn-primary" id="confirmCreateWorkspaceBtn">Create Workspace</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST NOTIFICATIONS -->
+        <div id="toastContainer" class="toast-container"></div>
+
+    </div>
+
+    <!-- Scripts -->
     <script src="api.js"></script>
     <script src="tabs.js"></script>
     <script src="storage.js"></script>
+    <script src="auth.js"></script>
     <script src="ui.js"></script>
     <script src="popup.js"></script>
-
 </body>
 </html>
