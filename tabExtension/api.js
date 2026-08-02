@@ -16,13 +16,13 @@ const API = {
     async checkHealth() {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000);
-            const res = await fetch(`${BASE_URL}/workspaces`, {
-                method: 'HEAD',
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const res = await fetch(`https://tabflow-backend-api.vercel.app/`, {
+                method: 'GET',
                 signal: controller.signal
             }).catch(() => null);
             clearTimeout(timeoutId);
-            return !!res;
+            return !!(res && res.ok);
         } catch {
             return false;
         }
