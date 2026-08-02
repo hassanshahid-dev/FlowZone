@@ -124,30 +124,76 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const userEmail = prompt('Enter your Google email address to sign in with Google:', 'user@gmail.com');
-    if (!userEmail) return;
-
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, name: 'Google User' })
-      }).catch(() => null);
-
-      if (res && res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-      } else {
-        localStorage.setItem('token', 'google_token_' + Date.now());
-        localStorage.setItem('user', JSON.stringify({ email: userEmail, plan: 'free' }));
+  // Listen for Google OAuth callback on mount
+  React.useEffect(() => {
+    // Check if returning from Google OAuth redirect
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+          .then(res => res.json())
+          .then(async (googleUser) => {
+            if (googleUser.email) {
+              const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: googleUser.email, name: googleUser.name })
+              }).catch(() => null);
+              const data = res ? await res.json() : {};
+              localStorage.setItem('token', data.token || ('google_session_' + Date.now()));
+              localStorage.setItem('user', JSON.stringify(data.user || { email: googleUser.email, plan: 'free' }));
+              navigate('/dashboard');
+            }
+          })
+          .catch(() => {});
       }
-      navigate('/dashboard');
-    } catch (err) {
-      localStorage.setItem('token', 'google_token_' + Date.now());
-      navigate('/dashboard');
     }
+
+    // Initialize Google GSI SDK if present
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: "108342893821-tabflow.apps.googleusercontent.com",
+          callback: async (response) => {
+            if (response.credential) {
+              const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential })
+              }).catch(() => null);
+              const data = res ? await res.json() : {};
+              localStorage.setItem('token', data.token || ('google_session_' + Date.now()));
+              if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+              navigate('/dashboard');
+            }
+          }
+        });
+      } catch (e) {}
+    }
+  }, [navigate]);
+
+  const handleGoogleLogin = () => {
+    setLoading(true);
+    setError('');
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/login')}&response_type=token&scope=email%20profile`;
+            window.location.href = redirectUrl;
+          }
+        });
+        return;
+      } catch (e) {}
+    }
+
+    // Fallback: Redirect directly to Google Accounts OAuth Authorization
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/login')}&response_type=token&scope=email%20profile`;
+    window.location.href = googleAuthUrl;
   };
 
   return (

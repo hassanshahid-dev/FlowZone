@@ -139,12 +139,52 @@ export default function Register() {
     }
   };
 
+  // Listen for Google OAuth callback on mount
+  React.useEffect(() => {
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+          .then(res => res.json())
+          .then(async (googleUser) => {
+            if (googleUser.email) {
+              const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: googleUser.email, name: googleUser.name })
+              }).catch(() => null);
+              const data = res ? await res.json() : {};
+              localStorage.setItem('token', data.token || ('google_session_' + Date.now()));
+              localStorage.setItem('user', JSON.stringify(data.user || { email: googleUser.email, plan: 'free' }));
+              navigate('/dashboard');
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [navigate]);
+
   const handleGoogleSignup = () => {
-    const userEmail = prompt('Enter your Google Email Address to sign up:', 'newuser@gmail.com');
-    if (!userEmail) return;
-    localStorage.setItem('token', 'google_token_' + Date.now());
-    localStorage.setItem('user', JSON.stringify({ email: userEmail, plan: 'free' }));
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/register')}&response_type=token&scope=email%20profile`;
+            window.location.href = redirectUrl;
+          }
+        });
+        return;
+      } catch (e) {}
+    }
+
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/register')}&response_type=token&scope=email%20profile`;
+    window.location.href = googleAuthUrl;
   };
 
   return (

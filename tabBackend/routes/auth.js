@@ -232,15 +232,46 @@ router.post('/login', async (req, res) => {
 // Google OAuth
 router.post('/google', async (req, res) => {
     try {
-        const { email } = req.body;
-        if (!email) return res.status(400).json({ error: 'Email required' });
+        let { email, name, credential } = req.body;
+
+        // If Google JWT Credential string is passed, decode the payload
+        if (credential && !email) {
+            try {
+                const parts = credential.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+                    if (payload.email) {
+                        email = payload.email;
+                        name = payload.name || name;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to parse Google JWT payload:', e.message);
+            }
+        }
+
+        if (!email) return res.status(400).json({ error: 'Valid Google email is required' });
+
         const normalizedEmail = email.toLowerCase().trim();
         let user = await User.findOne({ email: normalizedEmail });
+
         if (!user) {
             const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
-            user = await User.create({ email: normalizedEmail, password: randomPassword, isVerified: true });
+            user = await User.create({
+                email: normalizedEmail,
+                password: randomPassword,
+                isVerified: true,
+                plan: 'free'
+            });
+        } else if (!user.isVerified) {
+            user.isVerified = true;
+            await user.save();
         }
-        res.status(200).json({ token: generateToken(user), user: { id: user._id, email: user.email, plan: user.plan } });
+
+        res.status(200).json({
+            token: generateToken(user),
+            user: { id: user._id, email: user.email, plan: user.plan }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
