@@ -406,14 +406,14 @@ const UI = {
 
         if (!isPro) {
             container.innerHTML = `
-                <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; padding: 24px 20px; text-center; margin: 12px 0;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">⭐ 🔒</div>
-                    <h3 style="color: #F59E0B; font-weight: 700; font-size: 15px; margin-bottom: 6px; text-transform: uppercase; tracking-wider: 1px;">Pro Feature Locked</h3>
+                <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 24px 20px; text-align: center; margin: 12px 0;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">✨ 🔒</div>
+                    <h3 style="color: #3B82F6; font-weight: 700; font-size: 15px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Pro Plan Required</h3>
                     <p style="color: #94A3B8; font-size: 12px; margin-bottom: 16px; line-height: 1.5;">
-                        AI tab auto-grouping and topic clustering requires a <strong>TabFlow Pro</strong> account. Free accounts are limited to 3 manual workspaces.
+                        <strong>Unlimited AI Tab Categorization</strong> & <strong>Unlimited Cloud Workspace Sync</strong> are Pro Member features ($4.99/mo).
                     </p>
-                    <button onclick="window.open('https://tabflow-dashboard-eight.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #F59E0B, #D97706); color: #000; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); text-transform: uppercase; tracking-wider: 1px;">
-                        Upgrade to Pro ⭐
+                    <button onclick="window.open('https://tabflow-dashboard-eight.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #2563EB, #1D4ED8); color: #FFF; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+                        Upgrade to Pro ($4.99/mo) ✨
                     </button>
                 </div>
             `;
