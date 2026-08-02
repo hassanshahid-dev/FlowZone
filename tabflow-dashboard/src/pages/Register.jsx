@@ -168,23 +168,8 @@ export default function Register() {
   }, [navigate]);
 
   const handleGoogleSignup = () => {
-    setLoading(true);
-    setError('');
-
-    if (window.google && window.google.accounts && window.google.accounts.id) {
-      try {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/register')}&response_type=token&scope=email%20profile`;
-            window.location.href = redirectUrl;
-          }
-        });
-        return;
-      } catch (e) {}
-    }
-
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/register')}&response_type=token&scope=email%20profile`;
-    window.location.href = googleAuthUrl;
+    const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=108342893821-tabflow.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(window.location.origin + '/register')}&response_type=token&scope=email%20profile&prompt=select_account`;
+    window.location.href = redirectUrl;
   };
 
   return (
