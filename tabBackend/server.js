@@ -52,3 +52,5 @@ mongoose.connect(mongoUri)
             });
     });
 
+export default app;
+

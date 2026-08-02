@@ -43,11 +43,15 @@ export default function Register() {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register-otp', {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/register-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-      });
+      }).catch(() => fetch('http://localhost:5000/api/auth/register-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      }));
 
       const data = await res.json();
 

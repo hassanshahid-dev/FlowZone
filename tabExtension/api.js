@@ -1,6 +1,4 @@
-// api.js - TabFlow API Service Client
-
-const BASE_URL = `http://localhost:5000/api`;
+const BASE_URL = `https://tabflow-backend-api.vercel.app/api`;
 
 const API = {
     async getToken() {

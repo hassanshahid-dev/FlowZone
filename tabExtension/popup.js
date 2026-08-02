@@ -199,7 +199,12 @@
                     updateUserMenu({ token: null, user: null });
                     UI.showToast('Logged out of cloud account', 'info');
                 } else {
-                    if (authOverlay) authOverlay.style.display = 'flex';
+                    // Redirect to web landing page login with Continue with Google & 2FA OTP
+                    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                        chrome.tabs.create({ url: 'https://tabflow-dashboard-eight.vercel.app/login' });
+                    } else {
+                        window.open('https://tabflow-dashboard-eight.vercel.app/login', '_blank');
+                    }
                 }
             });
         }

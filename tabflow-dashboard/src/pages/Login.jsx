@@ -32,11 +32,15 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login-otp', {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/login-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-      });
+      }).catch(() => fetch('http://localhost:5000/api/auth/login-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      }));
 
       const data = await res.json();
 

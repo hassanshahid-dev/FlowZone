@@ -1,8 +1,6 @@
-import axios from 'axios';
+const BASE_URL = 'https://tabflow-backend-api.vercel.app/api';
 
-BASE_URL = 'http://localhost:5000/api'
-
-const api = axios.create({ baseURL : BASE_URL });
+const api = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use(async (config) => {
     const { token } = await chrome.storage.local.get('token');
