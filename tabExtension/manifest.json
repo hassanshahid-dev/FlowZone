@@ -15,9 +15,8 @@
     ],
 
     "host_permissions": [
-        "http://localhost:5000/*",
-        "https://*/*",
-        "http://*/*"
+        "https://tabflow-backend-api.vercel.app/*",
+        "https://tabflow-dashboard-eight.vercel.app/*"
     ],
 
     "background": {
