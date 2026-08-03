@@ -19,8 +19,13 @@ router.get(`/`, async (req, res) => {
 // POST /api/workspaces/
 router.post(`/`, async (req, res) => {
     try {
-        const { name, tabs } = req.body;
-        const workspace = await Workspace.create({ userId : req.user.id, name : name, tabs : tabs});
+        const { name, tabs, tag } = req.body;
+        const workspace = await Workspace.create({
+            userId: req.user.id,
+            name: name || 'Untitled Workspace',
+            tabs: Array.isArray(tabs) ? tabs : [],
+            tag: tag || 'Indigo'
+        });
 
         res.status(201).json(workspace);
     } catch (error) {

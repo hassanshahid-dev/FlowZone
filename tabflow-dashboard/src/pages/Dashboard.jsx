@@ -50,6 +50,48 @@ export default function Dashboard() {
     navigate('/login');
   };
 
+  const handleCreateWorkspace = async () => {
+    const wsName = prompt('Enter a name for your new Cloud Workspace:', 'My Work Project');
+    if (!wsName || !wsName.trim()) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: wsName.trim(),
+          tabs: [
+            { title: 'Google', url: 'https://google.com' },
+            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
+          ],
+          tag: 'Indigo'
+        })
+      }).catch(() => fetch('http://localhost:5000/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: wsName.trim(),
+          tabs: [
+            { title: 'Google', url: 'https://google.com' },
+            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
+          ],
+          tag: 'Indigo'
+        })
+      }));
+
+      if (res && res.ok) {
+        fetchWorkspaces();
+      }
+    } catch (e) {}
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between">
       
@@ -73,10 +115,10 @@ export default function Dashboard() {
           </div>
           <button 
             onClick={fetchWorkspaces} 
-            className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800"
+            className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium px-3"
             title="Refresh Cloud Sync"
           >
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
           </button>
           <button 
             onClick={handleLogout} 
@@ -98,6 +140,12 @@ export default function Dashboard() {
               Signed in as <strong className="text-blue-400">{user?.email || 'Cloud User'}</strong>
             </p>
           </div>
+          <button
+            onClick={handleCreateWorkspace}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition shadow-sm"
+          >
+            <Plus size={16} /> New Workspace
+          </button>
         </div>
 
         {/* Stats Grid */}
