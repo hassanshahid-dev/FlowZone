@@ -12,20 +12,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serverless-aware MongoDB Connection Middleware with Promise Caching
+// Serverless-aware MongoDB Connection Middleware with Promise Caching & Cloud Fallback
 let connectionPromise = null;
 
 const connectDb = async (req, res, next) => {
-    // If already connected, proceed immediately
     if (mongoose.connection.readyState === 1) {
         return next();
     }
 
     try {
         if (!connectionPromise) {
-            const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tabflow';
+            const mongoUri = process.env.MONGO_URI || 'mongodb+srv://hassanshahid_05:civic2013oriel@tabflow.h8nfwlr.mongodb.net/tabflow?retryWrites=true&w=majority';
             connectionPromise = mongoose.connect(mongoUri, {
-                serverSelectionTimeoutMS: 8000
+                serverSelectionTimeoutMS: 5000,
+                bufferCommands: false
             });
         }
         
@@ -34,10 +34,11 @@ const connectDb = async (req, res, next) => {
         next();
     } catch (err) {
         connectionPromise = null;
-        console.warn('⚠️ Cloud MongoDB connection warning, trying local instance:', err.message);
+        console.warn('⚠️ Cloud MongoDB connection warning:', err.message);
         try {
             await mongoose.connect('mongodb://127.0.0.1:27017/tabflow', {
-                serverSelectionTimeoutMS: 3000
+                serverSelectionTimeoutMS: 3000,
+                bufferCommands: false
             });
             console.log('✅ Local MongoDB Connected');
             next();
