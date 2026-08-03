@@ -344,8 +344,13 @@
                 });
 
                 if (selectedTabs.length === 0) {
-                    UI.showToast('Please select at least one tab to include in workspace', 'error');
-                    return;
+                    if (Array.isArray(currentOpenTabs) && currentOpenTabs.length > 0) {
+                        currentOpenTabs.forEach(t => {
+                            selectedTabs.push({ title: t.title || 'New Tab', url: t.url || 'https://google.com', favIconUrl: t.favIconUrl });
+                        });
+                    } else {
+                        selectedTabs.push({ title: 'New Tab', url: 'https://google.com' });
+                    }
                 }
 
                 let created = null;
