@@ -21,36 +21,29 @@
         try {
             const localWorkspaces = await Storage.getWorkspaces();
             if (session.token && isOnline) {
-                const backendWorkspaces = await API.getWorkspaces();
-                if (Array.isArray(backendWorkspaces)) {
-                    // Upload any local workspaces missing from Cloud backend
-                    if (localWorkspaces.length > 0) {
-                        let hasNewLocal = false;
-                        for (const ws of localWorkspaces) {
-                            const existsOnBackend = backendWorkspaces.some(b => b.name === ws.name || b._id === ws._id);
-                            if (!existsOnBackend) {
-                                await API.createWorkspace(ws.name, ws.tabs || [], ws.tag || 'Indigo');
-                                hasNewLocal = true;
-                            }
-                        }
-                        if (hasNewLocal) {
-                            const reSynced = await API.getWorkspaces();
-                            if (Array.isArray(reSynced)) {
-                                currentWorkspaces = reSynced;
-                                await Storage.saveWorkspaces(reSynced);
-                            } else {
-                                currentWorkspaces = backendWorkspaces;
-                            }
-                        } else {
+                // Bulk sync un-synced local storage workspaces to Cloud backend
+                if (localWorkspaces.length > 0) {
+                    const syncResult = await API.syncLocalWorkspaces(localWorkspaces);
+                    if (syncResult && Array.isArray(syncResult.workspaces)) {
+                        currentWorkspaces = syncResult.workspaces;
+                        await Storage.saveWorkspaces(syncResult.workspaces);
+                    } else {
+                        const backendWorkspaces = await API.getWorkspaces();
+                        if (Array.isArray(backendWorkspaces) && backendWorkspaces.length > 0) {
                             currentWorkspaces = backendWorkspaces;
                             await Storage.saveWorkspaces(backendWorkspaces);
+                        } else {
+                            currentWorkspaces = localWorkspaces;
                         }
-                    } else {
-                        currentWorkspaces = backendWorkspaces;
-                        await Storage.saveWorkspaces(backendWorkspaces);
                     }
                 } else {
-                    currentWorkspaces = localWorkspaces;
+                    const backendWorkspaces = await API.getWorkspaces();
+                    if (Array.isArray(backendWorkspaces)) {
+                        currentWorkspaces = backendWorkspaces;
+                        await Storage.saveWorkspaces(backendWorkspaces);
+                    } else {
+                        currentWorkspaces = [];
+                    }
                 }
             } else {
                 currentWorkspaces = localWorkspaces;
@@ -188,10 +181,14 @@
             updateConnectionStatus(isOnline);
             if (isOnline) {
                 const localWorkspaces = await Storage.getWorkspaces();
-                // Upload any local workspaces missing from Cloud backend
                 if (localWorkspaces.length > 0) {
-                    for (const ws of localWorkspaces) {
-                        await API.createWorkspace(ws.name, ws.tabs || [], ws.tag || 'Indigo');
+                    const syncRes = await API.syncLocalWorkspaces(localWorkspaces);
+                    if (syncRes && Array.isArray(syncRes.workspaces)) {
+                        currentWorkspaces = syncRes.workspaces;
+                        await Storage.saveWorkspaces(syncRes.workspaces);
+                        UI.displayWorkspaces(syncRes.workspaces);
+                        UI.showToast(`Uploaded local workspaces to cloud! (${syncRes.workspaces.length} total)`, 'success');
+                        return;
                     }
                 }
                 const backendWorkspaces = await API.getWorkspaces();
@@ -200,9 +197,8 @@
                     await Storage.saveWorkspaces(backendWorkspaces);
                     UI.displayWorkspaces(backendWorkspaces);
                     UI.showToast(`Synced ${backendWorkspaces.length} workspaces with cloud!`, 'success');
-                } else if (localWorkspaces.length > 0) {
-                    UI.displayWorkspaces(localWorkspaces);
-                    UI.showToast('Local workspaces preserved.', 'success');
+                } else {
+                    UI.showToast('Cloud sync active.', 'info');
                 }
             } else {
                 UI.showToast('Server unreachable. Running in local mode.', 'info');

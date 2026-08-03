@@ -103,6 +103,27 @@ const API = {
         }
     },
 
+    async syncLocalWorkspaces(workspaces) {
+        try {
+            const token = await this.getToken();
+            if (!token || !Array.isArray(workspaces) || workspaces.length === 0) return null;
+
+            const res = await fetch(`${BASE_URL}/workspaces/sync-local`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ workspaces })
+            });
+
+            if (!res.ok) return null;
+            return await res.json();
+        } catch {
+            return null;
+        }
+    },
+
     async updateWorkspace(id, data) {
         try {
             const token = await this.getToken();
