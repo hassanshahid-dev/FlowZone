@@ -8,9 +8,44 @@
     // =========================================================================
     // 1. INITIALIZATION & CONNECTION CHECK
     // =========================================================================
+    async function autoSyncTokenFromDashboard() {
+        return new Promise((resolve) => {
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query && chrome.scripting) {
+                chrome.tabs.query({ url: '*://tabflow-dashboard-eight.vercel.app/*' }, (tabs) => {
+                    if (tabs && tabs.length > 0) {
+                        chrome.scripting.executeScript({
+                            target: { tabId: tabs[0].id },
+                            func: () => ({
+                                token: localStorage.getItem('token'),
+                                user: localStorage.getItem('user')
+                            })
+                        }, async (results) => {
+                            if (results && results[0] && results[0].result && results[0].result.token) {
+                                const { token, user } = results[0].result;
+                                const userObj = user ? JSON.parse(user) : null;
+                                await Auth.setSession(token, userObj);
+                                resolve({ token, user: userObj });
+                                return;
+                            }
+                            resolve(null);
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                });
+            } else {
+                resolve(null);
+            }
+        });
+    }
+
     async function initApp() {
-        // Check User Session
-        const session = await Auth.getUser();
+        // Auto-sync token from active dashboard tab if missing
+        let session = await Auth.getUser();
+        if (!session.token) {
+            const syncedSession = await autoSyncTokenFromDashboard();
+            if (syncedSession) session = syncedSession;
+        }
         updateUserMenu(session);
 
         // Check Server Connection
@@ -177,17 +212,26 @@
         // Quick Sync Button
         document.getElementById('quickSyncBtn')?.addEventListener('click', async () => {
             UI.showToast('Syncing workspaces with cloud...', 'info');
+            let session = await Auth.getUser();
+            if (!session.token) {
+                const syncedSession = await autoSyncTokenFromDashboard();
+                if (syncedSession) {
+                    session = syncedSession;
+                    updateUserMenu(session);
+                }
+            }
+
             const isOnline = await API.checkHealth();
             updateConnectionStatus(isOnline);
             if (isOnline) {
                 const localWorkspaces = await Storage.getWorkspaces();
-                if (localWorkspaces.length > 0) {
+                if (session && session.token && localWorkspaces.length > 0) {
                     const syncRes = await API.syncLocalWorkspaces(localWorkspaces);
                     if (syncRes && Array.isArray(syncRes.workspaces)) {
                         currentWorkspaces = syncRes.workspaces;
                         await Storage.saveWorkspaces(syncRes.workspaces);
                         UI.displayWorkspaces(syncRes.workspaces);
-                        UI.showToast(`Uploaded local workspaces to cloud! (${syncRes.workspaces.length} total)`, 'success');
+                        UI.showToast(`Synced ${syncRes.workspaces.length} workspaces with cloud!`, 'success');
                         return;
                     }
                 }
@@ -197,6 +241,8 @@
                     await Storage.saveWorkspaces(backendWorkspaces);
                     UI.displayWorkspaces(backendWorkspaces);
                     UI.showToast(`Synced ${backendWorkspaces.length} workspaces with cloud!`, 'success');
+                } else if (!session || !session.token) {
+                    UI.showToast('Please open Dashboard to connect account', 'error');
                 } else {
                     UI.showToast('Cloud sync active.', 'info');
                 }

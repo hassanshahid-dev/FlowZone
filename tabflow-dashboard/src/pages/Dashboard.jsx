@@ -19,6 +19,9 @@ export default function Dashboard() {
       try { setUser(JSON.parse(storedUser)); } catch (e) {}
     }
 
+    // Broadcast session token to Chrome Extension
+    window.postMessage({ type: 'TABFLOW_SYNC_SESSION' }, '*');
+
     fetchWorkspaces();
     const interval = setInterval(fetchWorkspaces, 5000);
     return () => clearInterval(interval);
