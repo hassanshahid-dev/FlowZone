@@ -353,8 +353,9 @@
                     }
                 }
 
+                const session = await Auth.getUser();
                 let created = null;
-                if (session.token) {
+                if (session && session.token) {
                     // Logged In Member: Sync Workspace to MongoDB Cloud Backend API
                     created = await API.createWorkspace(wsName, selectedTabs, selectedTag);
                 }
