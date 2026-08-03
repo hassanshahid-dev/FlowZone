@@ -8,8 +8,8 @@ async function testEmail() {
         port: Number(process.env.SMTP_PORT || 465),
         secure: true,
         auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+            user: process.env.SMTP_USER || 'iammuhammad3005@gmail.com',
+            pass: process.env.SMTP_PASS || 'hwmlcusovkidvqii'
         }
     });
 

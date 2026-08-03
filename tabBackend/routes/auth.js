@@ -29,13 +29,8 @@ const sendOtpEmail = async (toEmail, otpCode) => {
     try {
         const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
         const smtpPort = Number(process.env.SMTP_PORT || 465);
-        const smtpUser = process.env.SMTP_USER;
-        const smtpPass = process.env.SMTP_PASS;
-
-        if (!smtpUser || !smtpPass) {
-            console.log(`ℹ️ SMTP credentials not configured in env. Code for ${toEmail}: ${otpCode}`);
-            return false;
-        }
+        const smtpUser = process.env.SMTP_USER || 'iammuhammad3005@gmail.com';
+        const smtpPass = process.env.SMTP_PASS || 'hwmlcusovkidvqii';
 
         const transporter = nodemailer.createTransport({
             host: smtpHost,
