@@ -23,6 +23,17 @@
         "service_worker": "background.js"
     },
 
+    "content_scripts": [
+        {
+            "matches": [
+                "https://tabflow-dashboard-eight.vercel.app/*",
+                "http://localhost:5173/*"
+            ],
+            "js": ["content.js"],
+            "run_at": "document_idle"
+        }
+    ],
+
     "side_panel": {
         "default_path": "popup.html"
     },

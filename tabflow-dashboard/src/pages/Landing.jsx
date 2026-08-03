@@ -4,7 +4,7 @@ import {
   Zap, Cpu, Sparkles, Shield, RefreshCw, Download, Star,
   ChevronDown, Monitor, Check, ArrowRight, Play, Volume2, Maximize2,
   User, Award, X as CloseIcon, Copy, ExternalLink, CheckCircle2,
-  Menu, X, Cloud, Lock, Asterisk, Plus, FileText, BookOpen, MessageSquare, TrendingUp, Headphones, Flame, Gauge
+  Menu, X, Cloud, Lock, Asterisk, Plus, FileText, BookOpen, MessageSquare, TrendingUp, Headphones, Flame, Gauge, LogIn
 } from 'lucide-react';
 
 // Brand SVG Logo
@@ -248,12 +248,12 @@ export default function Landing() {
             <ChromeIcon size={20} />
             Try TabFlow Free
           </button>
-          <a
-            href="#video-demo"
-            className="w-full sm:w-auto inline-flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-base px-7 py-4 rounded-full transition border border-slate-200 gap-2"
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full sm:w-auto inline-flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-base px-7 py-4 rounded-full transition border border-slate-200 gap-2 cursor-pointer shadow-sm"
           >
-            <Play size={16} className="text-blue-600 fill-blue-600" /> Watch Video Demo
-          </a>
+            <LogIn size={18} className="text-blue-600" /> Sign In / Register
+          </button>
         </div>
 
         {/* Hero Feature Highlights matching exact user screenshot */}

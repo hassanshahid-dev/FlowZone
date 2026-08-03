@@ -94,6 +94,7 @@ export default function Login() {
 
       localStorage.setItem('token', data.token);
       if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+      try { window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: data.token, user: data.user }, '*'); } catch (e) {}
       navigate('/dashboard');
 
     } catch (err) {
@@ -251,20 +252,7 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* DEMO OTP BANNER */}
-              {generatedOtp && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 mb-5 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block mb-1">
-                    🔑 Security Verification OTP Code
-                  </span>
-                  <div className="text-2xl font-black font-mono tracking-widest text-emerald-600">
-                    {generatedOtp}
-                  </div>
-                  <span className="text-[10px] text-emerald-600/80 block mt-1">
-                    (Valid for 10 minutes)
-                  </span>
-                </div>
-              )}
+
 
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-2xl text-center mb-5 font-medium">

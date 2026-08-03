@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import { validateEmailAddress } from '../middleware/validateEmail.js';
 
+import nodemailer from 'nodemailer';
+
 const router = express.Router();
 
 const generateToken = (user) => {
@@ -20,6 +22,60 @@ const generateToken = (user) => {
 // Generate 6-Digit Numeric OTP Code
 const generateOtpCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Dispatch OTP via Email Transporter
+const sendOtpEmail = async (toEmail, otpCode) => {
+    try {
+        const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+        const smtpPort = Number(process.env.SMTP_PORT || 465);
+        const smtpUser = process.env.SMTP_USER;
+        const smtpPass = process.env.SMTP_PASS;
+
+        if (!smtpUser || !smtpPass) {
+            console.log(`ℹ️ SMTP credentials not configured in env. Code for ${toEmail}: ${otpCode}`);
+            return false;
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465, // True for 465, false for 587
+            auth: {
+                user: smtpUser,
+                pass: smtpPass
+            }
+        });
+
+        const mailOptions = {
+            from: '"TabFlow Verification" <iammuhammad3005@gmail.com>',
+            to: toEmail,
+            subject: `Your TabFlow Security OTP: ${otpCode}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="color: #0f172a; margin: 0; font-size: 22px;">TabFlow Email Verification</h2>
+                        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Confirm email ownership to activate your account</p>
+                    </div>
+                    <p style="color: #334155; font-size: 14px; line-height: 1.5;">Hello,</p>
+                    <p style="color: #334155; font-size: 14px; line-height: 1.5;">Please use the 6-digit security verification code below to verify your email address <strong>${toEmail}</strong>:</p>
+                    
+                    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; text-align: center; font-size: 32px; font-weight: 800; font-family: monospace; letter-spacing: 8px; color: #2563eb; border-radius: 12px; margin: 20px 0;">
+                        ${otpCode}
+                    </div>
+
+                    <p style="color: #64748b; font-size: 12px; text-align: center;">This verification code is valid for <strong>10 minutes</strong>. Do not share this code with anyone.</p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✉️ OTP Email dispatched successfully to ${toEmail}`);
+        return true;
+    } catch (err) {
+        console.warn(`⚠️ SMTP dispatch warning for ${toEmail}:`, err.message);
+        return false;
+    }
 };
 
 // =========================================================================
@@ -66,11 +122,11 @@ router.post('/register-otp', async (req, res) => {
         }
 
         console.log(`🔑 Security OTP Generated for ${normalizedEmail}: ${otpCode}`);
+        await sendOtpEmail(normalizedEmail, otpCode);
 
         res.status(200).json({
-            message: `OTP sent to ${normalizedEmail}`,
+            message: `Verification OTP sent to ${normalizedEmail}`,
             email: normalizedEmail,
-            otpCode, // Returned for instant testing preview
             expiresInSeconds: 600
         });
 
@@ -113,11 +169,11 @@ router.post('/login-otp', async (req, res) => {
         await user.save();
 
         console.log(`🔑 Login 2FA OTP Generated for ${normalizedEmail}: ${otpCode}`);
+        await sendOtpEmail(normalizedEmail, otpCode);
 
         res.status(200).json({
             message: `2FA Security OTP sent to ${normalizedEmail}`,
             email: normalizedEmail,
-            otpCode, // Returned for instant testing preview
             expiresInSeconds: 600
         });
 
@@ -186,11 +242,11 @@ router.post('/resend-otp', async (req, res) => {
         user.otpCode = otpCode;
         user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await user.save();
+        await sendOtpEmail(normalizedEmail, otpCode);
 
         res.status(200).json({
             message: `Fresh OTP code sent to ${normalizedEmail}`,
-            email: normalizedEmail,
-            otpCode
+            email: normalizedEmail
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

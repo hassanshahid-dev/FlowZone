@@ -33,17 +33,10 @@ export default function Dashboard() {
         const data = await res.json();
         if (Array.isArray(data)) setWorkspaces(data);
       } else {
-        // Sample cloud workspaces
-        setWorkspaces([
-          { _id: '1', name: 'Dev & Engineering', tabs: [{ title: 'GitHub', url: 'https://github.com' }, { title: 'Vercel', url: 'https://vercel.com' }], tag: 'Indigo', updatedAt: new Date() },
-          { _id: '2', name: 'Design & Assets', tabs: [{ title: 'Figma', url: 'https://figma.com' }, { title: 'Unsplash', url: 'https://unsplash.com' }], tag: 'Emerald', updatedAt: new Date() },
-          { _id: '3', name: 'Research & Docs', tabs: [{ title: 'Google Docs', url: 'https://docs.google.com' }, { title: 'Notion', url: 'https://notion.so' }], tag: 'Blue', updatedAt: new Date() }
-        ]);
+        setWorkspaces([]);
       }
     } catch (err) {
-      setWorkspaces([
-        { _id: '1', name: 'Dev & Engineering', tabs: [{ title: 'GitHub', url: 'https://github.com' }, { title: 'Vercel', url: 'https://vercel.com' }], tag: 'Indigo' }
-      ]);
+      setWorkspaces([]);
     } finally {
       setLoading(false);
     }
