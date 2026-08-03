@@ -183,16 +183,26 @@
 
         // Quick Sync Button
         document.getElementById('quickSyncBtn')?.addEventListener('click', async () => {
-            UI.showToast('Syncing with backend cloud...', 'info');
+            UI.showToast('Syncing workspaces with cloud...', 'info');
             const isOnline = await API.checkHealth();
             updateConnectionStatus(isOnline);
             if (isOnline) {
+                const localWorkspaces = await Storage.getWorkspaces();
+                // Upload any local workspaces missing from Cloud backend
+                if (localWorkspaces.length > 0) {
+                    for (const ws of localWorkspaces) {
+                        await API.createWorkspace(ws.name, ws.tabs || [], ws.tag || 'Indigo');
+                    }
+                }
                 const backendWorkspaces = await API.getWorkspaces();
-                if (Array.isArray(backendWorkspaces)) {
+                if (Array.isArray(backendWorkspaces) && backendWorkspaces.length > 0) {
                     currentWorkspaces = backendWorkspaces;
                     await Storage.saveWorkspaces(backendWorkspaces);
                     UI.displayWorkspaces(backendWorkspaces);
-                    UI.showToast('Synced successfully with cloud!', 'success');
+                    UI.showToast(`Synced ${backendWorkspaces.length} workspaces with cloud!`, 'success');
+                } else if (localWorkspaces.length > 0) {
+                    UI.displayWorkspaces(localWorkspaces);
+                    UI.showToast('Local workspaces preserved.', 'success');
                 }
             } else {
                 UI.showToast('Server unreachable. Running in local mode.', 'info');
@@ -342,12 +352,9 @@
                     return;
                 }
 
-                const session = await Auth.getUser();
-                const isPro = session.user && session.user.plan === 'pro';
-
-                let created;
-                if (isPro) {
-                    // Pro Member: Sync with Cloud Backend API
+                let created = null;
+                if (session.token) {
+                    // Logged In Member: Sync Workspace to MongoDB Cloud Backend API
                     created = await API.createWorkspace(wsName, selectedTabs, selectedTag);
                 }
 

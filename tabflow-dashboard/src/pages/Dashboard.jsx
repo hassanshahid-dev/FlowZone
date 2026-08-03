@@ -16,6 +16,8 @@ export default function Dashboard() {
     }
 
     fetchWorkspaces();
+    const interval = setInterval(fetchWorkspaces, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchWorkspaces = async () => {
