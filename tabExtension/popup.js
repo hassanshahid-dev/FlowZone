@@ -17,18 +17,43 @@
         const isOnline = await API.checkHealth();
         updateConnectionStatus(isOnline);
 
-        // Load Workspaces (Backend primary, local fallback)
+        // Load Workspaces (Cloud backend primary with automatic bidirectional sync)
         try {
+            const localWorkspaces = await Storage.getWorkspaces();
             if (session.token && isOnline) {
                 const backendWorkspaces = await API.getWorkspaces();
                 if (Array.isArray(backendWorkspaces)) {
-                    currentWorkspaces = backendWorkspaces;
-                    await Storage.saveWorkspaces(backendWorkspaces);
+                    // Upload any local workspaces missing from Cloud backend
+                    if (localWorkspaces.length > 0) {
+                        let hasNewLocal = false;
+                        for (const ws of localWorkspaces) {
+                            const existsOnBackend = backendWorkspaces.some(b => b.name === ws.name || b._id === ws._id);
+                            if (!existsOnBackend) {
+                                await API.createWorkspace(ws.name, ws.tabs || [], ws.tag || 'Indigo');
+                                hasNewLocal = true;
+                            }
+                        }
+                        if (hasNewLocal) {
+                            const reSynced = await API.getWorkspaces();
+                            if (Array.isArray(reSynced)) {
+                                currentWorkspaces = reSynced;
+                                await Storage.saveWorkspaces(reSynced);
+                            } else {
+                                currentWorkspaces = backendWorkspaces;
+                            }
+                        } else {
+                            currentWorkspaces = backendWorkspaces;
+                            await Storage.saveWorkspaces(backendWorkspaces);
+                        }
+                    } else {
+                        currentWorkspaces = backendWorkspaces;
+                        await Storage.saveWorkspaces(backendWorkspaces);
+                    }
                 } else {
-                    currentWorkspaces = await Storage.getWorkspaces();
+                    currentWorkspaces = localWorkspaces;
                 }
             } else {
-                currentWorkspaces = await Storage.getWorkspaces();
+                currentWorkspaces = localWorkspaces;
             }
         } catch (err) {
             currentWorkspaces = await Storage.getWorkspaces();

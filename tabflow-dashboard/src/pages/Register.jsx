@@ -292,6 +292,9 @@ export default function Register() {
                 <p className="text-xs text-[#5F6368] mt-1">
                   We sent a 6-digit OTP code to <strong className="text-slate-900">{email}</strong>
                 </p>
+                <p className="text-[11px] text-amber-700 font-medium mt-2 bg-amber-50 border border-amber-200 py-1.5 px-3 rounded-xl inline-block">
+                  📩 Please check your inbox and <strong>Spam / Junk folder</strong> for the OTP email.
+                </p>
               </div>
 
 

@@ -228,7 +228,7 @@ export default function Login() {
                   disabled={loading}
                   className="w-full bg-black hover:bg-neutral-800 text-white font-medium text-sm py-3.5 rounded-full transition shadow-md flex items-center justify-center gap-2 mt-2"
                 >
-                  {loading ? 'Verifying Credentials...' : 'Sign In with 2FA OTP'}
+                  {loading ? 'Verifying Credentials...' : 'Sign In'}
                 </button>
               </form>
 
@@ -240,19 +240,20 @@ export default function Login() {
               </div>
             </>
           ) : (
-            /* STEP 2: 2FA OTP VERIFICATION FORM */
+            /* STEP 2: OTP VERIFICATION FORM */
             <>
               <div className="text-center mb-6">
                 <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 mx-auto mb-3">
                   <ShieldCheck size={26} />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900">2FA Security OTP</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Email Verification OTP</h2>
                 <p className="text-xs text-[#5F6368] mt-1">
                   We sent a 6-digit OTP code to <strong className="text-slate-900">{email}</strong>
                 </p>
+                <p className="text-[11px] text-amber-700 font-medium mt-2 bg-amber-50 border border-amber-200 py-1.5 px-3 rounded-xl inline-block">
+                  📩 Please check your inbox and <strong>Spam / Junk folder</strong> for the OTP email.
+                </p>
               </div>
-
-
 
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-2xl text-center mb-5 font-medium">
@@ -284,7 +285,7 @@ export default function Login() {
                   disabled={loading}
                   className="w-full bg-black hover:bg-neutral-800 text-white font-medium text-sm py-3.5 rounded-full transition shadow-md flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Verifying OTP...' : 'Verify & Continue'}
+                  {loading ? 'Logging In...' : 'Log In'}
                 </button>
               </form>
 
