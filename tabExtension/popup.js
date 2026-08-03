@@ -107,7 +107,7 @@
             if (dot) { dot.className = 'status-dot online'; }
             if (text) { text.textContent = 'Cloud Sync On'; }
             if (backendStatus) {
-                backendStatus.textContent = 'Connected (http://localhost:5000/api)';
+                backendStatus.textContent = 'Connected (https://tabflow-backend-api.vercel.app/api)';
                 backendStatus.style.color = 'var(--accent-emerald)';
             }
         } else {
