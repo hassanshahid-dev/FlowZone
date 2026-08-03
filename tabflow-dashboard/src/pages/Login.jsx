@@ -53,7 +53,7 @@ export default function Login() {
       setGeneratedOtp(data.otpCode || '');
       setStep(2); // Move to 2FA OTP verification step
     } catch (err) {
-      // Local fallback for offline/demo testing
+      // Fallback for offline/demo testing
       const fakeOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(fakeOtp);
       setStep(2);
@@ -74,11 +74,15 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otpCode: otpInput.trim() })
-      });
+      }).catch(() => fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otpCode: otpInput.trim() })
+      }));
 
       const data = await res.json();
 
@@ -95,6 +99,7 @@ export default function Login() {
     } catch (err) {
       if (generatedOtp && otpInput.trim() === generatedOtp) {
         localStorage.setItem('token', 'local_otp_session_' + Date.now());
+        localStorage.setItem('user', JSON.stringify({ email, plan: 'free' }));
         navigate('/dashboard');
       } else {
         setError('Invalid OTP code. Please check and try again.');
@@ -109,11 +114,16 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/resend-otp', {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/resend-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
-      });
+      }).catch(() => fetch('http://localhost:5000/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      }));
+
       const data = await res.json();
       if (data.otpCode) setGeneratedOtp(data.otpCode);
     } catch (err) {
@@ -123,8 +133,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-
-
 
   return (
     <div className="min-h-screen bg-white text-[#1F1F1F] font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col justify-between">
@@ -159,28 +167,6 @@ export default function Login() {
                 <TabFlowLogoSvg className="w-12 h-10 mx-auto mb-4" />
                 <h2 className="text-3xl font-normal text-black">Welcome Back</h2>
                 <p className="text-xs text-[#5F6368] mt-1.5">Sign in to sync your browser workspaces</p>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <button 
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-medium text-sm py-3 rounded-full transition flex items-center justify-center gap-3 shadow-sm"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                  </svg>
-                  Sign in with Google
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 my-6">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-xs text-slate-400 font-medium">OR EMAIL & OTP</span>
-                <div className="flex-1 h-px bg-slate-200" />
               </div>
 
               {error && (
@@ -260,68 +246,75 @@ export default function Login() {
                   <ShieldCheck size={26} />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900">2FA Security OTP</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Enter the 6-digit login verification code sent to <strong className="text-slate-800">{email}</strong>
+                <p className="text-xs text-[#5F6368] mt-1">
+                  We sent a 6-digit OTP code to <strong className="text-slate-900">{email}</strong>
                 </p>
               </div>
 
-              {/* DEMO OTP TEST BANNER */}
+              {/* DEMO OTP BANNER */}
               {generatedOtp && (
-                <div className="bg-emerald-950/90 border border-emerald-500/50 p-3.5 rounded-2xl text-center mb-5 text-xs text-emerald-300 font-mono shadow-lg">
-                  <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                    <KeyRound size={12} /> 2FA VERIFICATION CODE
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 mb-5 text-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block mb-1">
+                    🔑 Security Verification OTP Code
+                  </span>
+                  <div className="text-2xl font-black font-mono tracking-widest text-emerald-600">
+                    {generatedOtp}
                   </div>
-                  <span className="text-xl font-black tracking-widest text-white">{generatedOtp}</span>
+                  <span className="text-[10px] text-emerald-600/80 block mt-1">
+                    (Valid for 10 minutes)
+                  </span>
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3.5 rounded-2xl text-center mb-5 font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-2xl text-center mb-5 font-medium">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 text-center">
-                    6-Digit 2FA Verification Code
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Enter 6-Digit OTP
                   </label>
-                  <input 
-                    type="text" 
-                    maxLength={6}
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center text-2xl font-mono font-bold tracking-[0.5em] bg-slate-50 border-2 border-slate-300 rounded-2xl py-3 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition"
-                    placeholder="000000"
-                    autoFocus
-                    required
-                  />
+                  <div className="relative">
+                    <KeyRound size={18} className="absolute left-4 top-3.5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      maxLength="6"
+                      value={otpInput} 
+                      onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-lg font-mono tracking-widest font-bold text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition text-center" 
+                      placeholder="123456"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3.5 rounded-full transition shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-black hover:bg-neutral-800 text-white font-medium text-sm py-3.5 rounded-full transition shadow-md flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Authenticating...' : 'Verify OTP & Log In'}
+                  {loading ? 'Verifying OTP...' : 'Verify & Continue'}
                 </button>
               </form>
 
-              <div className="flex items-center justify-between text-xs mt-6 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mt-6 text-xs text-[#5F6368]">
                 <button 
                   type="button" 
-                  onClick={() => setStep(1)}
-                  className="text-slate-500 hover:text-black font-medium"
+                  onClick={() => setStep(1)} 
+                  className="hover:text-black transition"
                 >
-                  ← Back to Email
+                  &larr; Change Email
                 </button>
                 <button 
                   type="button" 
-                  onClick={handleResendOtp}
+                  onClick={handleResendOtp} 
                   disabled={loading}
-                  className="text-blue-600 hover:underline font-semibold flex items-center gap-1"
+                  className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
                 >
-                  <RefreshCw size={12} /> Resend OTP
+                  <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Resend OTP
                 </button>
               </div>
             </>
@@ -330,8 +323,9 @@ export default function Login() {
         </div>
       </main>
 
-      <footer className="py-6 border-t border-slate-100 text-center text-xs text-slate-400">
-        © 2026 TabFlow Workspace Manager • 2FA OTP Authentication
+      {/* Footer */}
+      <footer className="py-6 border-t border-slate-100 text-center text-xs text-[#5F6368]">
+        © 2026 TabFlow Inc. All rights reserved.
       </footer>
 
     </div>
