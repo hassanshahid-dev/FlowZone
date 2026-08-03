@@ -271,17 +271,13 @@
             dropdownAuthBtn.addEventListener('click', async () => {
                 userDropdown.classList.remove('show');
                 const session = await Auth.getUser();
-                if (session.token) {
+                if (session && session.token) {
                     await Auth.clearSession();
                     updateUserMenu({ token: null, user: null });
                     UI.showToast('Logged out of cloud account', 'info');
+                    if (authOverlay) authOverlay.style.display = 'flex';
                 } else {
-                    // Redirect to web landing page login with Continue with Google & 2FA OTP
-                    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-                        chrome.tabs.create({ url: 'https://tabflow-dashboard-eight.vercel.app/login' });
-                    } else {
-                        window.open('https://tabflow-dashboard-eight.vercel.app/login', '_blank');
-                    }
+                    if (authOverlay) authOverlay.style.display = 'flex';
                 }
             });
         }
@@ -330,9 +326,20 @@
                     updateUserMenu(res);
                     UI.showToast(`Successfully logged in as ${res.user.email}`, 'success');
                     
-                    // Fetch cloud workspaces
+                    // Upload local storage workspaces to cloud backend
+                    const localWorkspaces = await Storage.getWorkspaces();
+                    if (localWorkspaces.length > 0) {
+                        const syncRes = await API.syncLocalWorkspaces(localWorkspaces);
+                        if (syncRes && Array.isArray(syncRes.workspaces)) {
+                            currentWorkspaces = syncRes.workspaces;
+                            await Storage.saveWorkspaces(syncRes.workspaces);
+                            UI.displayWorkspaces(syncRes.workspaces);
+                        }
+                    }
+
+                    // Fetch all cloud workspaces
                     const backendWorkspaces = await API.getWorkspaces();
-                    if (Array.isArray(backendWorkspaces)) {
+                    if (Array.isArray(backendWorkspaces) && backendWorkspaces.length > 0) {
                         currentWorkspaces = backendWorkspaces;
                         await Storage.saveWorkspaces(backendWorkspaces);
                         UI.displayWorkspaces(backendWorkspaces);
