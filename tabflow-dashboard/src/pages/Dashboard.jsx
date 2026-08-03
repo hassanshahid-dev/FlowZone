@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TabFlowLogoSvg } from './Landing';
-import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus } from 'lucide-react';
+import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus, X, Globe } from 'lucide-react';
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newWsName, setNewWsName] = useState('');
+  const [selectedTag, setSelectedTag] = useState('Indigo');
+  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,10 +54,11 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  const handleCreateWorkspace = async () => {
-    const wsName = prompt('Enter a name for your new Cloud Workspace:', 'My Work Project');
-    if (!wsName || !wsName.trim()) return;
+  const handleConfirmCreateWorkspace = async (e) => {
+    e.preventDefault();
+    if (!newWsName.trim()) return;
 
+    setCreating(true);
     const token = localStorage.getItem('token');
     try {
       const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
@@ -63,12 +68,12 @@ export default function Dashboard() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: wsName.trim(),
+          name: newWsName.trim(),
           tabs: [
             { title: 'Google', url: 'https://google.com' },
             { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
           ],
-          tag: 'Indigo'
+          tag: selectedTag
         })
       }).catch(() => fetch('http://localhost:5000/api/workspaces', {
         method: 'POST',
@@ -77,23 +82,28 @@ export default function Dashboard() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: wsName.trim(),
+          name: newWsName.trim(),
           tabs: [
             { title: 'Google', url: 'https://google.com' },
             { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
           ],
-          tag: 'Indigo'
+          tag: selectedTag
         })
       }));
 
       if (res && res.ok) {
+        setNewWsName('');
+        setShowCreateModal(false);
         fetchWorkspaces();
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between relative">
       
       {/* Header Bar */}
       <header className="px-8 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
@@ -115,14 +125,14 @@ export default function Dashboard() {
           </div>
           <button 
             onClick={fetchWorkspaces} 
-            className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium px-3"
+            className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium px-3 cursor-pointer"
             title="Refresh Cloud Sync"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
           </button>
           <button 
             onClick={handleLogout} 
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 px-3.5 py-2 rounded-xl border border-slate-800 hover:border-red-900/50 transition font-medium"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 px-3.5 py-2 rounded-xl border border-slate-800 hover:border-red-900/50 transition font-medium cursor-pointer"
           >
             <LogOut size={14} /> Log Out
           </button>
@@ -141,10 +151,10 @@ export default function Dashboard() {
             </p>
           </div>
           <button
-            onClick={handleCreateWorkspace}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition shadow-sm"
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-blue-500/20 cursor-pointer"
           >
-            <Plus size={16} /> New Workspace
+            <Plus size={16} /> Create Workspace
           </button>
         </div>
 
@@ -188,50 +198,64 @@ export default function Dashboard() {
             Active Cloud Workspaces
           </h2>
 
-          {loading ? (
-            <div className="bg-slate-900/40 border border-slate-800/80 p-12 text-center rounded-2xl text-slate-400 text-sm">
-              Loading workspaces from cloud database...
+          {loading && workspaces.length === 0 ? (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-400 text-sm">
+              <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-blue-400" />
+              Loading workspaces...
             </div>
           ) : workspaces.length === 0 ? (
-            <div className="bg-slate-900/40 border border-slate-800/80 p-12 text-center rounded-2xl">
-              <Folder size={32} className="mx-auto text-slate-600 mb-3" />
-              <h3 className="text-base font-semibold text-white">No Cloud Workspaces Found</h3>
-              <p className="text-xs text-slate-400 mt-1">Open the TabFlow Chrome extension to save your first workspace!</p>
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center">
+              <Folder size={36} className="mx-auto mb-3 text-slate-600" />
+              <h3 className="text-base font-semibold text-slate-300">No Cloud Workspaces Found</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Click the <strong>"Create Workspace"</strong> button above or save a workspace in your Chrome extension!
+              </p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+              >
+                <Plus size={16} /> Create Workspace Now
+              </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {workspaces.map((ws) => (
-                <div key={ws._id || ws.name} className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-5 rounded-2xl transition shadow-lg flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                        <h3 className="text-base font-bold text-white tracking-tight">{ws.name}</h3>
-                      </div>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        {ws.tabs?.length || 0} Tabs
-                      </span>
+                <div key={ws._id || ws.name} className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition rounded-2xl p-5 group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        ws.tag === 'Emerald' ? 'bg-emerald-500' :
+                        ws.tag === 'Purple' ? 'bg-purple-500' :
+                        ws.tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} />
+                      <h3 className="font-semibold text-white text-base group-hover:text-blue-400 transition">{ws.name}</h3>
                     </div>
+                    <span className="text-[10px] text-slate-500 font-mono bg-slate-800/60 px-2.5 py-1 rounded-md">
+                      {ws.tabs?.length || 0} Tabs
+                    </span>
+                  </div>
 
-                    <div className="space-y-1.5 my-3">
-                      {(ws.tabs || []).slice(0, 4).map((tab, idx) => (
+                  {/* Tabs List */}
+                  <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-800/60">
+                    {ws.tabs && ws.tabs.length > 0 ? (
+                      ws.tabs.map((tab, idx) => (
                         <a 
                           key={idx} 
                           href={tab.url} 
                           target="_blank" 
-                          rel="noreferrer" 
-                          className="flex items-center justify-between text-xs text-slate-300 hover:text-blue-400 bg-slate-950/60 p-2 rounded-xl transition group"
+                          rel="noreferrer"
+                          className="flex items-center justify-between text-xs text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/40 transition group/tab"
                         >
-                          <span className="truncate pr-2">{tab.title || tab.url}</span>
-                          <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition shrink-0" />
+                          <div className="flex items-center gap-2 truncate pr-2">
+                            <Globe size={12} className="text-slate-500 flex-shrink-0" />
+                            <span className="truncate">{tab.title || tab.url}</span>
+                          </div>
+                          <ExternalLink size={12} className="opacity-0 group-hover/tab:opacity-100 text-slate-400 flex-shrink-0 transition" />
                         </a>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Tag: {ws.tag || 'Indigo'}</span>
-                    <span className="text-emerald-400 font-medium">Synced</span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-500 italic block py-1">No open tabs in this workspace</span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -242,9 +266,91 @@ export default function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t border-slate-900 text-center text-xs text-slate-600">
-        © 2026 TabFlow Cloud • Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
+      <footer className="px-8 py-4 text-center text-xs text-slate-600 border-t border-slate-900">
+        © 2026 TabFlow Cloud - Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
       </footer>
+
+      {/* CREATE WORKSPACE MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <Folder size={18} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Create New Workspace</h3>
+              </div>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmCreateWorkspace} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Workspace Name</label>
+                <input
+                  type="text"
+                  value={newWsName}
+                  onChange={(e) => setNewWsName(e.target.value)}
+                  placeholder="e.g. Design Assets, Client Leads, Engineering"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Color Tag</label>
+                <div className="flex items-center gap-3">
+                  {['Indigo', 'Emerald', 'Purple', 'Amber'].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setSelectedTag(tag)}
+                      className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl border transition cursor-pointer ${
+                        selectedTag === tag 
+                          ? 'border-blue-500 bg-blue-500/10 text-white font-semibold' 
+                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${
+                        tag === 'Emerald' ? 'bg-emerald-500' :
+                        tag === 'Purple' ? 'bg-purple-500' :
+                        tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} />
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating || !newWsName.trim()}
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-md disabled:opacity-50"
+                >
+                  {creating ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={16} />}
+                  {creating ? 'Creating...' : 'Create Workspace'}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
