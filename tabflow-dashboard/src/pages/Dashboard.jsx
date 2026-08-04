@@ -23,8 +23,19 @@ export default function Dashboard() {
     window.postMessage({ type: 'TABFLOW_SYNC_SESSION' }, '*');
 
     fetchWorkspaces();
-    const interval = setInterval(fetchWorkspaces, 5000);
-    return () => clearInterval(interval);
+
+    const handleMessage = (e) => {
+      if (e.data && (e.data.type === 'TABFLOW_SYNC_SESSION_DONE' || e.data.type === 'TABFLOW_SYNC_WORKSPACES')) {
+        fetchWorkspaces();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    const interval = setInterval(fetchWorkspaces, 3000);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(interval);
+    };
   }, []);
 
   const fetchWorkspaces = async () => {

@@ -25,9 +25,14 @@
                         chrome.storage.local.remove(['token', 'user']);
                     }
 
-                    // Sync local workspaces to Web localStorage for combined display
-                    if (extData.workSpaces && Array.isArray(extData.workSpaces)) {
-                        localStorage.setItem('workSpaces', JSON.stringify(extData.workSpaces));
+                    // Sync local workspaces to Web localStorage & post message for real-time dashboard render
+                    if (extData.workSpaces && Array.isArray(extData.workSpaces) && extData.workSpaces.length > 0) {
+                        const currentLocal = localStorage.getItem('workSpaces');
+                        const newStr = JSON.stringify(extData.workSpaces);
+                        if (currentLocal !== newStr) {
+                            localStorage.setItem('workSpaces', newStr);
+                            window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
+                        }
                     }
                 });
             }
