@@ -185,6 +185,7 @@ export default function Dashboard() {
         } catch (e) {}
       }
 
+      window.postMessage({ type: 'TABFLOW_ACTION_EVENT', action: 'rename', workspaceId: renameWsId, data: { name: renameWsName.trim() } }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       setShowRenameModal(false);
       fetchWorkspaces();
@@ -216,6 +217,7 @@ export default function Dashboard() {
         } catch (e) {}
       }
 
+      window.postMessage({ type: 'TABFLOW_ACTION_EVENT', action: 'delete', workspaceId: id }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       fetchWorkspaces();
     } catch (e) {}
@@ -249,6 +251,12 @@ export default function Dashboard() {
         } catch (e) {}
       }
 
+      window.postMessage({
+        type: 'TABFLOW_ACTION_EVENT',
+        action: newStatus ? 'restore' : 'suspend',
+        workspaceId: id,
+        data: { name: ws.name, tabs: ws.tabs }
+      }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       fetchWorkspaces();
     } catch (e) {}

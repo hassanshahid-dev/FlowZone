@@ -42,7 +42,20 @@
     checkAndSync();
 
     window.addEventListener('message', (e) => {
-        if (e.data && (e.data.type === 'TABFLOW_SYNC_SESSION' || e.data.type === 'TABFLOW_LOGOUT_EVENT')) {
+        if (!e.data) return;
+
+        if (e.data.type === 'TABFLOW_ACTION_EVENT') {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    type: 'TABFLOW_EXECUTE_ACTION',
+                    action: e.data.action,
+                    workspaceId: e.data.workspaceId,
+                    data: e.data.data
+                });
+            }
+        }
+
+        if (e.data.type === 'TABFLOW_SYNC_SESSION' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
             if (e.data.type === 'TABFLOW_LOGOUT_EVENT') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');

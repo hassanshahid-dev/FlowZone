@@ -122,3 +122,66 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
     });
     chrome.tabs.onRemoved.addListener(autoSyncActiveWorkspace);
 }
+
+// =========================================================================
+// REAL-TIME DASHBOARD ACTION EXECUTION BRIDGE
+// =========================================================================
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message && message.type === 'TABFLOW_EXECUTE_ACTION') {
+        const { action, workspaceId, data } = message;
+
+        chrome.storage.local.get(['workSpaces'], (storageData) => {
+            const workspaces = storageData.workSpaces || [];
+            const targetWs = workspaces.find(ws => (ws._id || ws.id) === workspaceId || (data?.name && ws.name.toLowerCase().trim() === data.name.toLowerCase().trim()));
+
+            if (action === 'suspend') {
+                // Suspend Action: Close matching open browser tabs
+                chrome.tabs.query({ currentWindow: true }, (tabs) => {
+                    if (tabs && tabs.length > 0 && targetWs && Array.isArray(targetWs.tabs)) {
+                        const targetUrls = targetWs.tabs.map(t => t.url).filter(Boolean);
+                        const tabIdsToRemove = tabs
+                            .filter(t => t.url && targetUrls.some(u => isUrlMatch(t.url, u)))
+                            .map(t => t.id);
+
+                        if (tabIdsToRemove.length > 0) {
+                            chrome.tabs.remove(tabIdsToRemove);
+                        }
+                    }
+                });
+
+                if (targetWs) {
+                    targetWs.isActive = false;
+                    chrome.storage.local.set({ workSpaces: workspaces });
+                }
+            } else if (action === 'restore') {
+                // Restore Action: Open workspace tabs in browser
+                if (targetWs && Array.isArray(targetWs.tabs) && targetWs.tabs.length > 0) {
+                    targetWs.tabs.forEach(t => {
+                        if (t.url) chrome.tabs.create({ url: t.url, active: false });
+                    });
+                    targetWs.isActive = true;
+                    chrome.storage.local.set({ workSpaces: workspaces });
+                }
+            } else if (action === 'rename' && data && data.name) {
+                if (targetWs) {
+                    targetWs.name = data.name;
+                    chrome.storage.local.set({ workSpaces: workspaces });
+                }
+            } else if (action === 'delete') {
+                const updated = workspaces.filter(ws => (ws._id || ws.id) !== workspaceId);
+                chrome.storage.local.set({ workSpaces: updated });
+            }
+        });
+    }
+});
+
+function isUrlMatch(url1, url2) {
+    if (!url1 || !url2) return false;
+    try {
+        const u1 = new URL(url1);
+        const u2 = new URL(url2);
+        return u1.origin === u2.origin && u1.pathname === u2.pathname;
+    } catch {
+        return url1 === url2;
+    }
+}
