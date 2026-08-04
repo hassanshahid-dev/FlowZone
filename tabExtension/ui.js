@@ -54,15 +54,16 @@ const UI = {
         const activeCount = workspaces.filter(ws => ws.isActive).length;
         const closedCount = workspaces.filter(ws => !ws.isActive).length;
         let totalTabs = 0;
-        let suspendedTabs = 0;
+        let totalRamSavedMB = 0;
 
         workspaces.forEach(ws => {
             const count = (ws.tabs || []).length;
             totalTabs += count;
-            if (!ws.isActive) suspendedTabs += count;
+            if (!ws.isActive) {
+                totalRamSavedMB += calculateWorkspaceRamInMb(ws.tabs);
+            }
         });
 
-        const totalRamSavedMB = suspendedTabs * 150;
         this.updateHeaderStats(totalRamSavedMB, activeCount, closedCount, totalTabs);
 
         if (filtered.length === 0) {
@@ -112,7 +113,8 @@ const UI = {
         };
         const tagColor = tagColors[tag] || tagColors.Blue;
         const tabCount = (ws.tabs || []).length;
-        const ramSavings = isClosed ? `💾 ~${tabCount * 150}MB saved` : '';
+        const totalMb = calculateWorkspaceRamInMb(ws.tabs);
+        const ramSavings = isClosed ? `💾 ~${totalMb}MB saved` : '';
 
         const card = document.createElement('div');
         card.className = `workspace-card ${isClosed ? 'closed' : 'active'} ${isPinned ? 'pinned' : ''}`;
@@ -276,7 +278,7 @@ const UI = {
                 closeTabs(tabsToClose, async () => {
                     const updated = await Storage.getWorkspaces();
                     this.displayWorkspaces(updated);
-                    const ramSaved = (ws.tabs || []).length * 150;
+                    const ramSaved = calculateWorkspaceRamInMb(ws.tabs);
                     const closedCount = tabsToClose.length;
                     this.showToast(`Saved & Suspended "${ws.name}" (${closedCount} tabs closed, ~${ramSaved}MB RAM saved)`, 'success');
                 });

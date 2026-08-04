@@ -20,17 +20,84 @@ function getTabs(callback) {
 }
 
 function parseAndReturnTabs(tabs, callback) {
-    const parsed = (tabs || [])
-        .filter(tab => tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://'))
-        .map(tab => ({
+    const rawTabs = (tabs || [])
+        .filter(tab => tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://'));
+
+    // Check if Chrome processes API is available for exact memory bytes per tab
+    if (typeof chrome !== 'undefined' && chrome.processes && chrome.processes.getProcessInfo) {
+        const processIds = [...new Set(rawTabs.map(t => t.processId).filter(Boolean))];
+        if (processIds.length > 0) {
+            chrome.processes.getProcessInfo(processIds, true, (processes) => {
+                const parsed = rawTabs.map(tab => {
+                    let memoryMb = 120;
+                    if (processes && tab.processId && processes[tab.processId] && processes[tab.processId].privateMemory) {
+                        memoryMb = Math.round(processes[tab.processId].privateMemory / (1024 * 1024));
+                    } else if (tab.url) {
+                        const u = tab.url.toLowerCase();
+                        if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) memoryMb = 380;
+                        else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) memoryMb = 290;
+                        else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) memoryMb = 210;
+                    }
+
+                    return {
+                        id: tab.id,
+                        title: tab.title || tab.url,
+                        url: tab.url,
+                        favIconUrl: tab.favIconUrl || getFaviconFromUrl(tab.url),
+                        pinned: tab.pinned || false,
+                        active: tab.active || false,
+                        memoryMb: memoryMb
+                    };
+                });
+                callback(parsed);
+            });
+            return;
+        }
+    }
+
+    const parsed = rawTabs.map(tab => {
+        let memoryMb = 120;
+        if (tab.url) {
+            const u = tab.url.toLowerCase();
+            if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) memoryMb = 380;
+            else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) memoryMb = 290;
+            else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) memoryMb = 210;
+        }
+
+        return {
             id: tab.id,
             title: tab.title || tab.url,
             url: tab.url,
             favIconUrl: tab.favIconUrl || getFaviconFromUrl(tab.url),
             pinned: tab.pinned || false,
-            active: tab.active || false
-        }));
+            active: tab.active || false,
+            memoryMb: memoryMb
+        };
+    });
     callback(parsed);
+}
+
+function calculateWorkspaceRamInMb(workspaceTabs) {
+    if (!Array.isArray(workspaceTabs) || workspaceTabs.length === 0) return 0;
+    
+    let totalMB = 0;
+    workspaceTabs.forEach(t => {
+        if (t.memoryMb && typeof t.memoryMb === 'number') {
+            totalMB += t.memoryMb;
+            return;
+        }
+
+        let tabMB = 120;
+        if (t.url) {
+            const u = t.url.toLowerCase();
+            if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) tabMB = 380;
+            else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) tabMB = 290;
+            else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) tabMB = 210;
+        }
+        totalMB += tabMB;
+    });
+
+    return totalMB;
 }
 
 function getFaviconFromUrl(url) {

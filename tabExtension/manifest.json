@@ -11,7 +11,8 @@
         "activeTab",
         "scripting",
         "favicon",
-        "contextMenus"
+        "contextMenus",
+        "processes"
     ],
 
     "host_permissions": [
