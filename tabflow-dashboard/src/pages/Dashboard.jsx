@@ -11,6 +11,12 @@ export default function Dashboard() {
   const [newWsName, setNewWsName] = useState('');
   const [selectedTag, setSelectedTag] = useState('Indigo');
   const [creating, setCreating] = useState(false);
+
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameWsId, setRenameWsId] = useState('');
+  const [renameWsName, setRenameWsName] = useState('');
+  const [renaming, setRenaming] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -142,6 +148,110 @@ export default function Dashboard() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleOpenRenameModal = (ws) => {
+    setRenameWsId(ws._id || ws.id);
+    setRenameWsName(ws.name || '');
+    setShowRenameModal(true);
+  };
+
+  const handleConfirmRenameWorkspace = async (e) => {
+    e.preventDefault();
+    if (!renameWsId || !renameWsName.trim()) return;
+
+    setRenaming(true);
+    const token = localStorage.getItem('token');
+    try {
+      if (token && !renameWsId.startsWith('local_')) {
+        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${renameWsId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ name: renameWsName.trim() })
+        }).catch(() => {});
+      }
+
+      let localWs = [];
+      const storedLocal = localStorage.getItem('workSpaces');
+      if (storedLocal) {
+        try {
+          localWs = JSON.parse(storedLocal);
+          const found = localWs.find(w => (w._id || w.id) === renameWsId);
+          if (found) found.name = renameWsName.trim();
+          localStorage.setItem('workSpaces', JSON.stringify(localWs));
+        } catch (e) {}
+      }
+
+      window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
+      setShowRenameModal(false);
+      fetchWorkspaces();
+    } catch (e) {
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handleDeleteWorkspace = async (ws) => {
+    const id = ws._id || ws.id;
+    if (!confirm(`Delete workspace "${ws.name}"?`)) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      if (token && id && !id.startsWith('local_')) {
+        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => {});
+      }
+
+      let localWs = [];
+      const storedLocal = localStorage.getItem('workSpaces');
+      if (storedLocal) {
+        try {
+          localWs = JSON.parse(storedLocal).filter(w => (w._id || w.id) !== id);
+          localStorage.setItem('workSpaces', JSON.stringify(localWs));
+        } catch (e) {}
+      }
+
+      window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
+      fetchWorkspaces();
+    } catch (e) {}
+  };
+
+  const handleToggleSuspendWorkspace = async (ws) => {
+    const id = ws._id || ws.id;
+    const newStatus = !ws.isActive;
+
+    const token = localStorage.getItem('token');
+    try {
+      if (token && id && !id.startsWith('local_')) {
+        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ isActive: newStatus })
+        }).catch(() => {});
+      }
+
+      let localWs = [];
+      const storedLocal = localStorage.getItem('workSpaces');
+      if (storedLocal) {
+        try {
+          localWs = JSON.parse(storedLocal);
+          const found = localWs.find(w => (w._id || w.id) === id);
+          if (found) found.isActive = newStatus;
+          localStorage.setItem('workSpaces', JSON.stringify(localWs));
+        } catch (e) {}
+      }
+
+      window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
+      fetchWorkspaces();
+    } catch (e) {}
   };
 
   return (
@@ -292,9 +402,25 @@ export default function Dashboard() {
                           }`} />
                         <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition">{ws.name}</h3>
                       </div>
-                      <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold">
-                        {ws.tabs?.length || 0} Tabs Saved
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenRenameModal(ws)}
+                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                          title="Rename Workspace"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteWorkspace(ws)}
+                          className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                          title="Delete Workspace"
+                        >
+                          🗑️
+                        </button>
+                        <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold">
+                          {ws.tabs?.length || 0} Tabs
+                        </span>
+                      </div>
                     </div>
 
                     {/* Saved Tabs List */}
@@ -326,7 +452,16 @@ export default function Dashboard() {
                   </div>
 
                   <div className="mt-5 pt-3 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/40">
-                    <span>Tag: <strong className="text-slate-400">{ws.tag || 'Indigo'}</strong></span>
+                    <button
+                      onClick={() => handleToggleSuspendWorkspace(ws)}
+                      className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                        ws.isActive === false
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                      }`}
+                    >
+                      {ws.isActive === false ? '🟢 Restore Workspace' : '⚪ Suspend Workspace'}
+                    </button>
                     <span>Updated: {new Date(ws.updatedAt || ws.createdAt || Date.now()).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -418,6 +553,61 @@ export default function Dashboard() {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* RENAME WORKSPACE MODAL */}
+      {showRenameModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  ✏️
+                </div>
+                <h3 className="text-lg font-bold text-white">Rename Workspace</h3>
+              </div>
+              <button
+                onClick={() => setShowRenameModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmRenameWorkspace} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">New Workspace Name</label>
+                <input
+                  type="text"
+                  value={renameWsName}
+                  onChange={(e) => setRenameWsName(e.target.value)}
+                  placeholder="Enter new workspace name..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRenameModal(false)}
+                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={renaming || !renameWsName.trim()}
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  {renaming ? <RefreshCw size={14} className="animate-spin" /> : null}
+                  {renaming ? 'Saving...' : 'Save Name'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

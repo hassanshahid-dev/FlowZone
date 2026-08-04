@@ -447,6 +447,78 @@
         }
 
         // =========================================================================
+        // 4. RENAME WORKSPACE MODAL
+        // =========================================================================
+        const renameModal = document.getElementById('renameWorkspaceModal');
+        const closeRenameModalBtn = document.getElementById('closeRenameModalBtn');
+        const cancelRenameModalBtn = document.getElementById('cancelRenameModalBtn');
+        const confirmRenameWorkspaceBtn = document.getElementById('confirmRenameWorkspaceBtn');
+
+        if (closeRenameModalBtn) closeRenameModalBtn.addEventListener('click', () => renameModal.style.display = 'none');
+        if (cancelRenameModalBtn) cancelRenameModalBtn.addEventListener('click', () => renameModal.style.display = 'none');
+
+        if (confirmRenameWorkspaceBtn) {
+            confirmRenameWorkspaceBtn.addEventListener('click', async () => {
+                const id = document.getElementById('renameWsIdInput').value;
+                const newName = document.getElementById('renameWsNameInput').value.trim();
+
+                if (id && newName) {
+                    await Storage.updateWorkspace(id, { name: newName });
+                    await API.updateWorkspace(id, { name: newName });
+                    currentWorkspaces = await Storage.getWorkspaces();
+                    UI.displayWorkspaces(currentWorkspaces);
+                    UI.showToast(`Renamed workspace to "${newName}"`, 'success');
+                }
+                if (renameModal) renameModal.style.display = 'none';
+            });
+        }
+
+        // =========================================================================
+        // 5. SUSPEND WORKSPACE MODAL WITH TAB SELECTION
+        // =========================================================================
+        const suspendModal = document.getElementById('suspendWorkspaceModal');
+        const closeSuspendModalBtn = document.getElementById('closeSuspendModalBtn');
+        const cancelSuspendModalBtn = document.getElementById('cancelSuspendModalBtn');
+        const confirmSuspendWorkspaceBtn = document.getElementById('confirmSuspendWorkspaceBtn');
+
+        if (closeSuspendModalBtn) closeSuspendModalBtn.addEventListener('click', () => suspendModal.style.display = 'none');
+        if (cancelSuspendModalBtn) cancelSuspendModalBtn.addEventListener('click', () => suspendModal.style.display = 'none');
+
+        if (confirmSuspendWorkspaceBtn) {
+            confirmSuspendWorkspaceBtn.addEventListener('click', async () => {
+                const id = document.getElementById('suspendWsIdInput').value;
+                const checklist = document.getElementById('suspendTabChecklist');
+                if (!id || !checklist) return;
+
+                const checkedBoxes = checklist.querySelectorAll('.suspend-tab-cb:checked');
+                const tabsToCloseIds = [];
+
+                checkedBoxes.forEach(cb => {
+                    const tabId = cb.getAttribute('data-tab-id');
+                    if (tabId && !isNaN(Number(tabId))) tabsToCloseIds.push(Number(tabId));
+                });
+
+                if (suspendModal) suspendModal.style.display = 'none';
+
+                if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.remove && tabsToCloseIds.length > 0) {
+                    chrome.tabs.remove(tabsToCloseIds, async () => {
+                        await Storage.updateWorkspace(id, { isActive: false });
+                        await API.updateWorkspace(id, { isActive: false });
+                        currentWorkspaces = await Storage.getWorkspaces();
+                        UI.displayWorkspaces(currentWorkspaces);
+                        UI.showToast(`Closed ${tabsToCloseIds.length} tabs & suspended workspace`, 'success');
+                    });
+                } else {
+                    await Storage.updateWorkspace(id, { isActive: false });
+                    await API.updateWorkspace(id, { isActive: false });
+                    currentWorkspaces = await Storage.getWorkspaces();
+                    UI.displayWorkspaces(currentWorkspaces);
+                    UI.showToast('Suspended workspace', 'info');
+                }
+            });
+        }
+
+        // =========================================================================
         // 4. OPEN TABS VIEW ACTIONS
         // =========================================================================
         document.getElementById('saveSelectedAsWorkspaceBtn')?.addEventListener('click', async () => {

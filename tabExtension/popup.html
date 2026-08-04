@@ -337,6 +337,50 @@
                     <button class="btn-primary" id="confirmCreateWorkspaceBtn">Create Workspace</button>
                 </div>
             </div>
+        <!-- RENAME WORKSPACE MODAL -->
+        <div class="modal-overlay" id="renameWorkspaceModal" style="display:none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>Rename Workspace</h3>
+                    <button class="modal-close" id="closeRenameModalBtn">&times;</button>
+                </div>
+                <div class="modal-body" style="margin-top: 14px;">
+                    <input type="hidden" id="renameWsIdInput" />
+                    <div class="form-group">
+                        <label>New Workspace Name</label>
+                        <input type="text" id="renameWsNameInput" placeholder="Enter new workspace name..." autofocus />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelRenameModalBtn">Cancel</button>
+                    <button class="btn-primary" id="confirmRenameWorkspaceBtn">Save Name</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUSPEND WORKSPACE MODAL WITH TAB SELECTION -->
+        <div class="modal-overlay" id="suspendWorkspaceModal" style="display:none;">
+            <div class="modal-card" style="max-width: 360px;">
+                <div class="modal-header">
+                    <h3>Close & Suspend Workspace</h3>
+                    <button class="modal-close" id="closeSuspendModalBtn">&times;</button>
+                </div>
+                <div class="modal-body" style="margin-top: 14px;">
+                    <input type="hidden" id="suspendWsIdInput" />
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Select open tabs to close and suspend to reclaim RAM memory:</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:600; color:var(--text-main);">
+                            <input type="checkbox" id="selectAllSuspendTabs" checked /> Select All
+                        </label>
+                        <span id="suspendTabSelectedCount" style="color:var(--text-muted);">0 selected</span>
+                    </div>
+                    <div class="modal-tab-checklist" id="suspendTabChecklist" style="max-height: 180px; overflow-y: auto;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelSuspendModalBtn">Cancel</button>
+                    <button class="btn-primary" id="confirmSuspendWorkspaceBtn" style="background:var(--accent-rose);">Close Selected Tabs</button>
+                </div>
+            </div>
         </div>
 
         <!-- TOAST NOTIFICATIONS -->

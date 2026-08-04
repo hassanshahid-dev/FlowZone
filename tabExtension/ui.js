@@ -132,7 +132,8 @@ const UI = {
                         ${isClosed ? '⚪ Suspended' : '🟢 Active'}
                     </span>
                 </div>
-                <div class="ws-actions-top">
+                <div class="ws-actions-top" style="display:flex; gap:4px; align-items:center;">
+                    <button class="btn-icon-xs" title="Rename Workspace" data-action="rename-ws" data-id="${id}">✏️</button>
                     <button class="btn-icon-xs ${isPinned ? 'active-pin' : ''}" title="${isPinned ? 'Unpin' : 'Pin'}" data-action="pin">
                         ${isPinned ? '⭐' : '☆'}
                     </button>
@@ -182,12 +183,21 @@ const UI = {
 
             e.stopPropagation();
 
-            if (action === 'pin') {
+            if (action === 'rename-ws') {
+                const renameModal = document.getElementById('renameWorkspaceModal');
+                const renameInput = document.getElementById('renameWsNameInput');
+                const renameIdInput = document.getElementById('renameWsIdInput');
+                if (renameModal && renameInput && renameIdInput) {
+                    renameIdInput.value = id;
+                    renameInput.value = ws.name || '';
+                    renameModal.style.display = 'flex';
+                }
+            } else if (action === 'pin') {
                 await Storage.togglePinWorkspace(id);
                 const updated = await Storage.getWorkspaces();
                 this.displayWorkspaces(updated);
             } else if (action === 'suspend') {
-                await this.suspendWorkspace(ws);
+                this.openSuspendModal(ws);
             } else if (action === 'restore') {
                 await this.restoreWorkspace(ws);
             } else if (action === 'delete') {
@@ -245,6 +255,64 @@ const UI = {
         });
 
         return card;
+    },
+
+    openSuspendModal(ws) {
+        const modal = document.getElementById('suspendWorkspaceModal');
+        const checklist = document.getElementById('suspendTabChecklist');
+        const idInput = document.getElementById('suspendWsIdInput');
+        const countSpan = document.getElementById('suspendTabSelectedCount');
+        const selectAll = document.getElementById('selectAllSuspendTabs');
+
+        if (!modal || !checklist || !idInput) return;
+
+        idInput.value = ws._id || ws.id;
+        checklist.innerHTML = '';
+
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+            const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
+            chrome.tabs.query({ currentWindow: true }, (currentTabs) => {
+                const matchingTabs = (currentTabs || []).filter(tab => tab.url && targetUrls.some(target => isUrlMatch(tab.url, target)));
+
+                const tabsToRender = matchingTabs.length > 0 ? matchingTabs : (ws.tabs || []);
+                tabsToRender.forEach((tab) => {
+                    const row = document.createElement('label');
+                    row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:6px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer; overflow:hidden; white-space:nowrap;';
+                    row.innerHTML = `
+                        <input type="checkbox" class="suspend-tab-cb" data-tab-id="${tab.id || ''}" data-url="${this.escapeHTML(tab.url)}" checked />
+                        <span style="overflow:hidden; text-overflow:ellipsis;" title="${this.escapeHTML(tab.title || tab.url)}">${this.escapeHTML(tab.title || tab.url)}</span>
+                    `;
+                    checklist.appendChild(row);
+                });
+
+                const updateCount = () => {
+                    const checked = checklist.querySelectorAll('.suspend-tab-cb:checked').length;
+                    if (countSpan) countSpan.textContent = `${checked} selected`;
+                };
+
+                checklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.addEventListener('change', updateCount));
+                if (selectAll) {
+                    selectAll.checked = true;
+                    selectAll.onchange = () => {
+                        checklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.checked = selectAll.checked);
+                        updateCount();
+                    };
+                }
+                updateCount();
+                modal.style.display = 'flex';
+            });
+        } else {
+            (ws.tabs || []).forEach((tab) => {
+                const row = document.createElement('label');
+                row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:6px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer;';
+                row.innerHTML = `
+                    <input type="checkbox" class="suspend-tab-cb" data-url="${this.escapeHTML(tab.url)}" checked />
+                    <span style="overflow:hidden; text-overflow:ellipsis;">${this.escapeHTML(tab.title || tab.url)}</span>
+                `;
+                checklist.appendChild(row);
+            });
+            modal.style.display = 'flex';
+        }
     },
 
     async suspendWorkspace(ws) {
