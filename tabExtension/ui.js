@@ -247,27 +247,45 @@ const UI = {
 
     async suspendWorkspace(ws) {
         const id = ws._id || ws.id;
-        const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
 
         if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
-            chrome.tabs.query({}, (currentTabs) => {
+            chrome.tabs.query({ currentWindow: true }, async (currentTabs) => {
+                const liveOpenTabs = (currentTabs || [])
+                    .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://'))
+                    .map(t => ({
+                        title: t.title || t.url,
+                        url: t.url,
+                        favIconUrl: t.favIconUrl
+                    }));
+
+                // Update workspace tabs to capture all live open tab changes before suspending
+                if (liveOpenTabs.length > 0) {
+                    ws.tabs = liveOpenTabs;
+                }
+
+                const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
                 const tabsToClose = (currentTabs || [])
                     .filter(tab => tab.url && targetUrls.some(target => isUrlMatch(tab.url, target)))
                     .map(tab => tab.id)
                     .filter(tabId => typeof tabId === 'number');
 
+                // Save updated tabs & isActive=false to local storage and MongoDB Cloud Atlas
+                await Storage.updateWorkspace(id, { tabs: ws.tabs, isActive: false });
+                await API.updateWorkspace(id, { tabs: ws.tabs, isActive: false });
+
                 closeTabs(tabsToClose, async () => {
-                    API.updateWorkspace(id, { isActive: false });
-                    const updated = await Storage.closeWorkspace(id);
+                    const updated = await Storage.getWorkspaces();
                     this.displayWorkspaces(updated);
                     const ramSaved = (ws.tabs || []).length * 150;
                     const closedCount = tabsToClose.length;
-                    this.showToast(`Suspended "${ws.name}" (${closedCount} tabs closed, ~${ramSaved}MB RAM saved)`, 'success');
+                    this.showToast(`Saved & Suspended "${ws.name}" (${closedCount} tabs closed, ~${ramSaved}MB RAM saved)`, 'success');
                 });
             });
         } else {
-            API.updateWorkspace(id, { isActive: false });
-            Storage.closeWorkspace(id).then(updated => this.displayWorkspaces(updated));
+            await Storage.updateWorkspace(id, { isActive: false });
+            await API.updateWorkspace(id, { isActive: false });
+            const updated = await Storage.getWorkspaces();
+            this.displayWorkspaces(updated);
         }
     },
 
