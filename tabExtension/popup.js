@@ -203,11 +203,18 @@
             });
         }
 
-        if (filterSelect) {
-            filterSelect.addEventListener('change', () => {
-                UI.displayWorkspaces(currentWorkspaces, getFilterValue(), getSearchValue());
-            });
-        }
+        // Open Web Dashboard Handlers
+        const handleOpenDashboard = () => {
+            const url = 'https://tabflow-dashboard-eight.vercel.app/dashboard';
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                chrome.tabs.create({ url });
+            } else {
+                window.open(url, '_blank');
+            }
+        };
+
+        document.getElementById('openWebDashboardBtn')?.addEventListener('click', handleOpenDashboard);
+        document.getElementById('dropdownOpenDashboardBtn')?.addEventListener('click', handleOpenDashboard);
 
         // Quick Sync Button
         document.getElementById('quickSyncBtn')?.addEventListener('click', async () => {

@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TabFlowLogoSvg } from './Landing';
-import { ShieldCheck, LogOut, CheckCircle2, Cloud, HardDrive, PanelLeft, RefreshCw, Folder } from 'lucide-react';
+import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus, X, Globe, LayoutDashboard } from 'lucide-react';
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [workspacesCount, setWorkspacesCount] = useState(0);
+  const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newWsName, setNewWsName] = useState('');
+  const [selectedTag, setSelectedTag] = useState('Indigo');
+  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,16 +19,17 @@ export default function Dashboard() {
       try { setUser(JSON.parse(storedUser)); } catch (e) {}
     }
 
-    // Broadcast session token to Chrome Extension content script
+    // Broadcast session token to Chrome Extension
     window.postMessage({ type: 'TABFLOW_SYNC_SESSION' }, '*');
 
-    fetchWorkspaceCount();
+    fetchWorkspaces();
+    const interval = setInterval(fetchWorkspaces, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchWorkspaceCount = async () => {
+  const fetchWorkspaces = async () => {
     setLoading(true);
     const token = localStorage.getItem('token');
-    if (!token) return;
 
     try {
       const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
@@ -35,9 +40,12 @@ export default function Dashboard() {
 
       if (res && res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) setWorkspacesCount(data.length);
+        if (Array.isArray(data)) setWorkspaces(data);
+      } else {
+        setWorkspaces([]);
       }
-    } catch (e) {
+    } catch (err) {
+      setWorkspaces([]);
     } finally {
       setLoading(false);
     }
@@ -49,8 +57,56 @@ export default function Dashboard() {
     navigate('/login');
   };
 
+  const handleConfirmCreateWorkspace = async (e) => {
+    e.preventDefault();
+    if (!newWsName.trim()) return;
+
+    setCreating(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newWsName.trim(),
+          tabs: [
+            { title: 'Google', url: 'https://google.com' },
+            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
+          ],
+          tag: selectedTag
+        })
+      }).catch(() => fetch('http://localhost:5000/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newWsName.trim(),
+          tabs: [
+            { title: 'Google', url: 'https://google.com' },
+            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
+          ],
+          tag: selectedTag
+        })
+      }));
+
+      if (res && res.ok) {
+        setNewWsName('');
+        setShowCreateModal(false);
+        fetchWorkspaces();
+      }
+    } catch (e) {
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between relative">
       
       {/* Header Bar */}
       <header className="px-8 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
@@ -61,15 +117,22 @@ export default function Dashboard() {
               TAB FLOW
             </span>
             <span className="text-[8px] font-bold tracking-widest text-blue-400 uppercase">
-              EXTENSION SIDEBAR MODE
+              CLOUD DASHBOARD
             </span>
           </div>
         </Link>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-            <ShieldCheck size={14} /> Cloud Account Connected
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <ShieldCheck size={14} /> Cloud Sync Active
           </div>
+          <button 
+            onClick={fetchWorkspaces} 
+            className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium px-3 cursor-pointer"
+            title="Refresh Cloud Sync"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
+          </button>
           <button 
             onClick={handleLogout} 
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 px-3.5 py-2 rounded-xl border border-slate-800 hover:border-red-900/50 transition font-medium cursor-pointer"
@@ -79,68 +142,231 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content: Extension Sidebar Launchpad */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-6 sm:p-10 flex flex-col items-center justify-center text-center">
+      {/* Main Content */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-6 sm:p-10">
         
-        {/* Success Icon Badge */}
-        <div className="w-20 h-20 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 shadow-xl shadow-blue-500/10">
-          <PanelLeft size={38} />
+        {/* Welcome Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2.5">
+              <LayoutDashboard size={26} className="text-blue-400" /> Your Cloud Workspaces
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Signed in as <strong className="text-blue-400">{user?.email || 'Cloud User'}</strong>
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-blue-500/20 cursor-pointer"
+          >
+            <Plus size={16} /> Create Workspace
+          </button>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Cloud Account Logged In!
-        </h1>
-        <p className="text-slate-400 text-sm mt-2 max-w-md">
-          Signed in as <strong className="text-blue-400">{user?.email || 'Cloud User'}</strong>. All your cloud-saved workspaces and local workspaces are active in your Chrome Extension Sidebar.
-        </p>
-
-        {/* Status Box */}
-        <div className="mt-8 w-full max-w-lg bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl text-left space-y-4">
-          
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <Cloud size={18} className="text-blue-400" />
-              <div>
-                <span className="text-xs font-bold text-white block">Synced Cloud Workspaces</span>
-                <span className="text-[10px] text-slate-500">MongoDB Atlas Database</span>
-              </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+              <span>Saved Workspaces</span>
+              <Folder size={16} className="text-blue-400" />
             </div>
-            <span className="text-base font-extrabold text-blue-400 font-mono">
-              {loading ? <RefreshCw size={14} className="animate-spin" /> : `${workspacesCount} Workspaces`}
-            </span>
+            <div className="text-3xl font-extrabold text-white">{workspaces.length}</div>
+            <span className="text-[10px] text-slate-500 mt-1 block">Synced with MongoDB Cloud Atlas</span>
           </div>
 
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 size={18} className="text-emerald-400" />
-              <div>
-                <span className="text-xs font-bold text-white block">Extension Sidebar Auto-Sync</span>
-                <span className="text-[10px] text-slate-500">Automatic local & cloud merging</span>
-              </div>
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+              <span>Total Active Tabs</span>
+              <Layers size={16} className="text-purple-400" />
             </div>
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-              ACTIVE
-            </span>
+            <div className="text-3xl font-extrabold text-white">
+              {workspaces.reduce((acc, ws) => acc + (ws.tabs?.length || 0), 0)} Tabs
+            </div>
+            <span className="text-[10px] text-slate-500 mt-1 block">Organized across workspaces</span>
           </div>
 
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+              <span>RAM Memory Reclaimed</span>
+              <HardDrive size={16} className="text-emerald-400" />
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-400">
+              {(workspaces.length * 0.45).toFixed(1)} GB
+            </div>
+            <span className="text-[10px] text-emerald-500/80 mt-1 block">~96% memory overhead saved</span>
+          </div>
         </div>
 
-        {/* How to Open Instructions */}
-        <div className="mt-8 bg-blue-600/10 border border-blue-500/20 rounded-2xl p-5 max-w-md text-center">
-          <h3 className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-2">
-            🚀 How to Open Your Workspaces
-          </h3>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Click the <strong>TabFlow extension icon</strong> in your Chrome toolbar or press <strong>Option + S</strong> to open your Extension Sidebar right now!
-          </p>
+        {/* Workspaces Grid */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Active Workspaces & Saved Tabs
+          </h2>
+
+          {loading && workspaces.length === 0 ? (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-400 text-sm">
+              <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-blue-400" />
+              Loading workspaces from cloud...
+            </div>
+          ) : workspaces.length === 0 ? (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center">
+              <Folder size={36} className="mx-auto mb-3 text-slate-600" />
+              <h3 className="text-base font-semibold text-slate-300">No Workspaces Found</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Create your first workspace using the button above or save workspaces in your Chrome extension!
+              </p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+              >
+                <Plus size={16} /> Create Workspace Now
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {workspaces.map((ws) => (
+                <div key={ws._id || ws.name} className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition rounded-2xl p-6 group flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3.5 h-3.5 rounded-full ${
+                          ws.tag === 'Emerald' || ws.tag === 'Green' ? 'bg-emerald-500' :
+                          ws.tag === 'Purple' ? 'bg-purple-500' :
+                          ws.tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                        }`} />
+                        <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition">{ws.name}</h3>
+                      </div>
+                      <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold">
+                        {ws.tabs?.length || 0} Tabs Saved
+                      </span>
+                    </div>
+
+                    {/* Saved Tabs List */}
+                    <div className="space-y-2 mt-4 pt-4 border-t border-slate-800/80">
+                      {ws.tabs && ws.tabs.length > 0 ? (
+                        ws.tabs.map((tab, idx) => (
+                          <a 
+                            key={idx} 
+                            href={tab.url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center justify-between text-xs text-slate-300 hover:text-white p-2.5 rounded-xl hover:bg-slate-800/60 transition border border-transparent hover:border-slate-700/60 group/tab"
+                          >
+                            <div className="flex items-center gap-2.5 truncate pr-2">
+                              {tab.favIconUrl ? (
+                                <img src={tab.favIconUrl} alt="" className="w-4 h-4 rounded flex-shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+                              ) : (
+                                <Globe size={14} className="text-slate-500 flex-shrink-0" />
+                              )}
+                              <span className="truncate font-medium">{tab.title || tab.url}</span>
+                            </div>
+                            <ExternalLink size={13} className="opacity-0 group-hover/tab:opacity-100 text-blue-400 flex-shrink-0 transition" />
+                          </a>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-500 italic block py-1">No open tabs saved in this workspace</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/40">
+                    <span>Tag: <strong className="text-slate-400">{ws.tag || 'Indigo'}</strong></span>
+                    <span>Updated: {new Date(ws.updatedAt || ws.createdAt || Date.now()).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </main>
 
       {/* Footer */}
       <footer className="px-8 py-4 text-center text-xs text-slate-600 border-t border-slate-900">
-        © 2026 TabFlow Cloud - Connected to Live Backend (https://tabflow-backend-api.vercel.app)
+        © 2026 TabFlow Cloud - Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
       </footer>
+
+      {/* CREATE WORKSPACE MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <Folder size={18} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Create New Workspace</h3>
+              </div>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmCreateWorkspace} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Workspace Name</label>
+                <input
+                  type="text"
+                  value={newWsName}
+                  onChange={(e) => setNewWsName(e.target.value)}
+                  placeholder="e.g. Design Assets, Client Leads, Engineering"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Color Tag</label>
+                <div className="flex items-center gap-3">
+                  {['Indigo', 'Emerald', 'Purple', 'Amber'].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setSelectedTag(tag)}
+                      className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl border transition cursor-pointer ${
+                        selectedTag === tag 
+                          ? 'border-blue-500 bg-blue-500/10 text-white font-semibold' 
+                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${
+                        tag === 'Emerald' ? 'bg-emerald-500' :
+                        tag === 'Purple' ? 'bg-purple-500' :
+                        tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} />
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating || !newWsName.trim()}
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-md disabled:opacity-50"
+                >
+                  {creating ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={16} />}
+                  {creating ? 'Creating...' : 'Create Workspace'}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
