@@ -16,10 +16,20 @@ router.get(`/`, async (req, res) => {
     }
 })
 
-// POST /api/workspaces/
+// POST /api/workspaces/ (Create single workspace)
 router.post(`/`, async (req, res) => {
     try {
         const { name, tabs, tag } = req.body;
+        const userPlan = req.user.plan || 'free';
+        const existingCount = await Workspace.countDocuments({ userId: req.user.id });
+
+        // Free tier enforces max 5 cloud workspaces
+        if (userPlan === 'free' && existingCount >= 5) {
+            return res.status(403).json({
+                error: 'Free Tier is limited to 5 cloud-synced workspaces. Upgrade to Pro for Unlimited cloud sync!'
+            });
+        }
+
         const workspace = await Workspace.create({
             userId: req.user.id,
             name: name || 'Untitled Workspace',
@@ -33,7 +43,7 @@ router.post(`/`, async (req, res) => {
     }
 });
 
-// POST /api/workspaces/sync-local (Migrate local storage workspaces to cloud)
+// POST /api/workspaces/sync-local (Migrate & sync local storage workspaces to cloud)
 router.post('/sync-local', async (req, res) => {
     try {
         const { workspaces } = req.body;
@@ -41,12 +51,24 @@ router.post('/sync-local', async (req, res) => {
             return res.status(400).json({ error: 'Workspaces array required' });
         }
 
-        const userWorkspaces = await Workspace.find({ userId: req.user.id });
+        const userPlan = req.user.plan || 'free';
+        let userWorkspaces = await Workspace.find({ userId: req.user.id });
         const existingNames = userWorkspaces.map(w => w.name.toLowerCase().trim());
 
         const createdList = [];
         for (const ws of workspaces) {
-            if (ws && ws.name && !existingNames.includes(ws.name.toLowerCase().trim())) {
+            if (!ws || !ws.name) continue;
+
+            const nameNorm = ws.name.toLowerCase().trim();
+            const existsInDb = existingNames.includes(nameNorm);
+
+            if (!existsInDb) {
+                // Check free tier limit (5 max)
+                const currentTotal = userWorkspaces.length + createdList.length;
+                if (userPlan === 'free' && currentTotal >= 5) {
+                    continue; // Skip creating additional workspaces beyond free tier 5 limit
+                }
+
                 const newWs = await Workspace.create({
                     userId: req.user.id,
                     name: ws.name.trim(),
@@ -54,6 +76,13 @@ router.post('/sync-local', async (req, res) => {
                     tag: ws.tag || 'Indigo'
                 });
                 createdList.push(newWs);
+            } else {
+                // Update existing workspace tabs if modified
+                const existingWs = userWorkspaces.find(w => w.name.toLowerCase().trim() === nameNorm);
+                if (existingWs && Array.isArray(ws.tabs) && ws.tabs.length > 0) {
+                    existingWs.tabs = ws.tabs;
+                    await existingWs.save();
+                }
             }
         }
 
