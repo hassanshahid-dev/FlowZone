@@ -167,6 +167,7 @@ const UI = {
                     : `<button class="btn-card-secondary" data-action="suspend">Close & Suspend</button>`
                 }
                 <button class="btn-card-secondary" data-action="add-current">Add Active Tab</button>
+                <button class="btn-card-secondary" data-action="sync-live-tabs" title="Update workspace with all currently open browser tabs">Sync Open Tabs</button>
                 <button class="btn-card-danger" data-action="delete" title="Delete Workspace">Delete</button>
             </div>
         `;
@@ -201,14 +202,31 @@ const UI = {
                         const exists = (ws.tabs || []).some(t => t.url === activeTab.url);
                         if (!exists) {
                             ws.tabs.push({ title: activeTab.title, url: activeTab.url, favIconUrl: activeTab.favIconUrl });
-                            await API.updateWorkspace(id, { tabs: ws.tabs });
                             await Storage.updateWorkspace(id, { tabs: ws.tabs });
+                            await API.updateWorkspace(id, { tabs: ws.tabs });
                             const updated = await Storage.getWorkspaces();
                             this.displayWorkspaces(updated);
                             this.showToast(`Added tab to "${ws.name}"`, 'success');
                         } else {
                             this.showToast('Tab already in workspace', 'info');
                         }
+                    }
+                });
+            } else if (action === 'sync-live-tabs') {
+                getTabs(async (currentTabs) => {
+                    if (currentTabs && currentTabs.length > 0) {
+                        const newTabsList = currentTabs.map(t => ({
+                            title: t.title || t.url,
+                            url: t.url,
+                            favIconUrl: t.favIconUrl
+                        })).filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://'));
+
+                        ws.tabs = newTabsList;
+                        await Storage.updateWorkspace(id, { tabs: newTabsList });
+                        await API.updateWorkspace(id, { tabs: newTabsList });
+                        const updated = await Storage.getWorkspaces();
+                        this.displayWorkspaces(updated);
+                        this.showToast(`Updated "${ws.name}" with ${newTabsList.length} open tabs`, 'success');
                     }
                 });
             } else if (action === 'open-tab' && targetUrl) {

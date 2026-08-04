@@ -63,3 +63,62 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         });
     }
 });
+
+// =========================================================================
+// AUTOMATIC LIVE ACTIVE WORKSPACE SYNC
+// =========================================================================
+let autoSyncDebounceTimer = null;
+
+function autoSyncActiveWorkspace() {
+    if (autoSyncDebounceTimer) clearTimeout(autoSyncDebounceTimer);
+    autoSyncDebounceTimer = setTimeout(() => {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local || !chrome.tabs) return;
+
+        chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+            const workspaces = data.workSpaces || [];
+            const activeWs = workspaces.find(ws => ws.isActive);
+
+            if (!activeWs) return;
+
+            chrome.tabs.query({ currentWindow: true }, (tabs) => {
+                if (!tabs || tabs.length === 0) return;
+
+                const liveTabsList = tabs
+                    .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://'))
+                    .map(t => ({
+                        title: t.title || t.url,
+                        url: t.url,
+                        favIconUrl: t.favIconUrl
+                    }));
+
+                if (liveTabsList.length === 0) return;
+
+                activeWs.tabs = liveTabsList;
+                activeWs.updatedAt = new Date().toISOString();
+
+                chrome.storage.local.set({ workSpaces: workspaces }, () => {
+                    if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
+                        fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${data.token}`
+                            },
+                            body: JSON.stringify({ tabs: liveTabsList })
+                        }).catch(() => {});
+                    }
+                });
+            });
+        });
+    }, 1500);
+}
+
+if (typeof chrome !== 'undefined' && chrome.tabs) {
+    chrome.tabs.onCreated.addListener(autoSyncActiveWorkspace);
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+        if (changeInfo.url || changeInfo.title) {
+            autoSyncActiveWorkspace();
+        }
+    });
+    chrome.tabs.onRemoved.addListener(autoSyncActiveWorkspace);
+}

@@ -127,6 +127,12 @@ const API = {
     async updateWorkspace(id, data) {
         try {
             const token = await this.getToken();
+            if (!token || !id) return null;
+
+            if (id.startsWith('local_')) {
+                return await this.createWorkspace(data.name || 'Workspace', data.tabs || [], data.tag || 'Indigo');
+            }
+
             const res = await fetch(`${BASE_URL}/workspaces/${id}`, {
                 method: 'PUT',
                 headers: {
