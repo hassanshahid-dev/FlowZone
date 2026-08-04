@@ -31,29 +31,48 @@ export default function Dashboard() {
     setLoading(true);
     const token = localStorage.getItem('token');
 
-    try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(() => fetch('http://localhost:5000/api/workspaces', {
-        headers: { Authorization: `Bearer ${token}` }
-      }));
+    let cloudWs = [];
+    if (token) {
+      try {
+        const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => fetch('http://localhost:5000/api/workspaces', {
+          headers: { Authorization: `Bearer ${token}` }
+        }));
 
-      if (res && res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) setWorkspaces(data);
-      } else {
-        setWorkspaces([]);
-      }
-    } catch (err) {
-      setWorkspaces([]);
-    } finally {
-      setLoading(false);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) cloudWs = data;
+        }
+      } catch (err) {}
     }
+
+    // Read local storage workspaces synced from extension sidebar
+    let localWs = [];
+    try {
+      const storedLocal = localStorage.getItem('workSpaces');
+      if (storedLocal) {
+        const parsed = JSON.parse(storedLocal);
+        if (Array.isArray(parsed)) localWs = parsed;
+      }
+    } catch (e) {}
+
+    // Combine cloud and local workspaces seamlessly
+    const combined = [...cloudWs];
+    localWs.forEach(l => {
+      const exists = combined.some(c => c._id === l._id || c.name.toLowerCase().trim() === l.name.toLowerCase().trim());
+      if (!exists) combined.push(l);
+    });
+
+    setWorkspaces(combined);
+    setLoading(false);
   };
 
   const handleLogout = () => {
+    window.postMessage({ type: 'TABFLOW_LOGOUT_EVENT' }, '*');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('workSpaces');
     navigate('/login');
   };
 
