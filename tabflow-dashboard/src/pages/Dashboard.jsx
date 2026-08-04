@@ -16,7 +16,7 @@ export default function Dashboard() {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) {}
+      try { setUser(JSON.parse(storedUser)); } catch (e) { }
     }
 
     // Broadcast session token to Chrome Extension
@@ -55,7 +55,7 @@ export default function Dashboard() {
           const data = await res.json();
           if (Array.isArray(data)) cloudWs = data;
         }
-      } catch (err) {}
+      } catch (err) { }
     }
 
     // Read local storage workspaces synced from extension sidebar
@@ -66,7 +66,7 @@ export default function Dashboard() {
         const parsed = JSON.parse(storedLocal);
         if (Array.isArray(parsed)) localWs = parsed;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Combine cloud and local workspaces seamlessly
     const combined = [...cloudWs];
@@ -137,7 +137,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col justify-between relative">
-      
+
       {/* Header Bar */}
       <header className="px-8 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
         <Link to="/" className="flex items-center gap-3 group">
@@ -156,15 +156,15 @@ export default function Dashboard() {
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
             <ShieldCheck size={14} /> Cloud Sync Active
           </div>
-          <button 
-            onClick={fetchWorkspaces} 
+          <button
+            onClick={fetchWorkspaces}
             className="p-2 text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium px-3 cursor-pointer"
             title="Refresh Cloud Sync"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync
           </button>
-          <button 
-            onClick={handleLogout} 
+          <button
+            onClick={handleLogout}
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 px-3.5 py-2 rounded-xl border border-slate-800 hover:border-red-900/50 transition font-medium cursor-pointer"
           >
             <LogOut size={14} /> Log Out
@@ -174,7 +174,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 sm:p-10">
-        
+
         {/* Welcome Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -277,11 +277,10 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3.5 h-3.5 rounded-full ${
-                          ws.tag === 'Emerald' || ws.tag === 'Green' ? 'bg-emerald-500' :
+                        <div className={`w-3.5 h-3.5 rounded-full ${ws.tag === 'Emerald' || ws.tag === 'Green' ? 'bg-emerald-500' :
                           ws.tag === 'Purple' ? 'bg-purple-500' :
-                          ws.tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
-                        }`} />
+                            ws.tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                          }`} />
                         <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition">{ws.name}</h3>
                       </div>
                       <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold">
@@ -293,10 +292,10 @@ export default function Dashboard() {
                     <div className="space-y-2 mt-4 pt-4 border-t border-slate-800/80">
                       {ws.tabs && ws.tabs.length > 0 ? (
                         ws.tabs.map((tab, idx) => (
-                          <a 
-                            key={idx} 
-                            href={tab.url} 
-                            target="_blank" 
+                          <a
+                            key={idx}
+                            href={tab.url}
+                            target="_blank"
                             rel="noreferrer"
                             className="flex items-center justify-between text-xs text-slate-300 hover:text-white p-2.5 rounded-xl hover:bg-slate-800/60 transition border border-transparent hover:border-slate-700/60 group/tab"
                           >
@@ -338,7 +337,7 @@ export default function Dashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
-            
+
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -346,7 +345,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-lg font-bold text-white">Create New Workspace</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
               >
@@ -376,17 +375,15 @@ export default function Dashboard() {
                       key={tag}
                       type="button"
                       onClick={() => setSelectedTag(tag)}
-                      className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl border transition cursor-pointer ${
-                        selectedTag === tag 
-                          ? 'border-blue-500 bg-blue-500/10 text-white font-semibold' 
-                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
-                      }`}
+                      className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl border transition cursor-pointer ${selectedTag === tag
+                        ? 'border-blue-500 bg-blue-500/10 text-white font-semibold'
+                        : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                        }`}
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full ${
-                        tag === 'Emerald' ? 'bg-emerald-500' :
+                      <span className={`w-2.5 h-2.5 rounded-full ${tag === 'Emerald' ? 'bg-emerald-500' :
                         tag === 'Purple' ? 'bg-purple-500' :
-                        tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
-                      }`} />
+                          tag === 'Amber' ? 'bg-amber-500' : 'bg-blue-500'
+                        }`} />
                       {tag}
                     </button>
                   ))}

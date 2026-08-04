@@ -17,9 +17,17 @@ const Storage = {
     async saveWorkspaces(workspaces) {
         return new Promise((resolve) => {
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                chrome.storage.local.set({ workSpaces: workspaces }, () => resolve(workspaces));
+                chrome.storage.local.set({ workSpaces: workspaces }, async () => {
+                    if (typeof API !== 'undefined' && API.syncLocalWorkspaces) {
+                        API.syncLocalWorkspaces(workspaces).catch(() => {});
+                    }
+                    resolve(workspaces);
+                });
             } else {
                 localStorage.setItem("workSpaces", JSON.stringify(workspaces));
+                if (typeof API !== 'undefined' && API.syncLocalWorkspaces) {
+                    API.syncLocalWorkspaces(workspaces).catch(() => {});
+                }
                 resolve(workspaces);
             }
         });

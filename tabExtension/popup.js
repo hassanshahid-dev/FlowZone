@@ -56,30 +56,31 @@
         try {
             const localWorkspaces = await Storage.getWorkspaces();
             if (session.token && isOnline) {
-                // Bulk sync un-synced local storage workspaces to Cloud backend
+                let mergedList = [...localWorkspaces];
+
+                // First: Sync local workspaces to MongoDB Cloud Atlas
                 if (localWorkspaces.length > 0) {
                     const syncResult = await API.syncLocalWorkspaces(localWorkspaces);
                     if (syncResult && Array.isArray(syncResult.workspaces)) {
-                        currentWorkspaces = syncResult.workspaces;
-                        await Storage.saveWorkspaces(syncResult.workspaces);
-                    } else {
-                        const backendWorkspaces = await API.getWorkspaces();
-                        if (Array.isArray(backendWorkspaces) && backendWorkspaces.length > 0) {
-                            currentWorkspaces = backendWorkspaces;
-                            await Storage.saveWorkspaces(backendWorkspaces);
-                        } else {
-                            currentWorkspaces = localWorkspaces;
-                        }
-                    }
-                } else {
-                    const backendWorkspaces = await API.getWorkspaces();
-                    if (Array.isArray(backendWorkspaces)) {
-                        currentWorkspaces = backendWorkspaces;
-                        await Storage.saveWorkspaces(backendWorkspaces);
-                    } else {
-                        currentWorkspaces = [];
+                        mergedList = syncResult.workspaces;
                     }
                 }
+
+                // Second: Fetch full cloud list from MongoDB Cloud Atlas
+                const backendWorkspaces = await API.getWorkspaces();
+                if (Array.isArray(backendWorkspaces) && backendWorkspaces.length > 0) {
+                    backendWorkspaces.forEach(bw => {
+                        const idx = mergedList.findIndex(m => m._id === bw._id || m.name.toLowerCase().trim() === bw.name.toLowerCase().trim());
+                        if (idx >= 0) {
+                            mergedList[idx] = bw;
+                        } else {
+                            mergedList.push(bw);
+                        }
+                    });
+                }
+
+                currentWorkspaces = mergedList;
+                await Storage.saveWorkspaces(mergedList);
             } else {
                 currentWorkspaces = localWorkspaces;
             }
