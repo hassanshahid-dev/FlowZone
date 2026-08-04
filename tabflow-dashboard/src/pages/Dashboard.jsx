@@ -51,9 +51,18 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` }
         }));
 
-        if (res && res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) cloudWs = data;
+        if (res) {
+          if (res.status === 401) {
+            // Token is invalid/expired -> Clear invalid token and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+            return;
+          }
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) cloudWs = data;
+          }
         }
       } catch (err) { }
     }

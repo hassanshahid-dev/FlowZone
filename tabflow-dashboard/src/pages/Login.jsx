@@ -86,8 +86,8 @@ export default function Login() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setError(data.error || 'Invalid 2FA OTP code');
+      if (!res.ok || !data.token) {
+        setError(data.error || 'Authentication failed. Please check your credentials.');
         setLoading(false);
         return;
       }
@@ -98,13 +98,7 @@ export default function Login() {
       navigate('/dashboard');
 
     } catch (err) {
-      if (generatedOtp && otpInput.trim() === generatedOtp) {
-        localStorage.setItem('token', 'local_otp_session_' + Date.now());
-        localStorage.setItem('user', JSON.stringify({ email, plan: 'free' }));
-        navigate('/dashboard');
-      } else {
-        setError('Invalid OTP code. Please check and try again.');
-      }
+      setError('Connection failed. Please check your internet connection and try again.');
     } finally {
       setLoading(false);
     }

@@ -9,12 +9,12 @@ router.use(protect);
 // GET /api/workspaces/
 router.get(`/`, async (req, res) => {
     try {
-        const workspaces = await Workspace.find( {userId : req.user.id,} );
-        res.status(201).json(workspaces);
+        const workspaces = await Workspace.find({ userId: req.user.id });
+        res.status(200).json(workspaces);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-})
+});
 
 // POST /api/workspaces/ (Create single workspace)
 router.post(`/`, async (req, res) => {
