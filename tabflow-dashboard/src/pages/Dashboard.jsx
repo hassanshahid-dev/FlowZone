@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TabFlowLogoSvg } from './Landing';
-import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus, X, Globe, LayoutDashboard } from 'lucide-react';
+import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus, X, Globe, LayoutDashboard, Pencil, Trash2, Play, Pause } from 'lucide-react';
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -410,22 +410,22 @@ export default function Dashboard() {
                           }`} />
                         <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition">{ws.name}</h3>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleOpenRenameModal(ws)}
                           className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
                           title="Rename Workspace"
                         >
-                          ✏️
+                          <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => handleDeleteWorkspace(ws)}
                           className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition cursor-pointer"
                           title="Delete Workspace"
                         >
-                          🗑️
+                          <Trash2 size={14} />
                         </button>
-                        <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold">
+                        <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-3 py-1 rounded-full font-semibold ml-1">
                           {ws.tabs?.length || 0} Tabs
                         </span>
                       </div>
@@ -462,13 +462,17 @@ export default function Dashboard() {
                   <div className="mt-5 pt-3 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/40">
                     <button
                       onClick={() => handleToggleSuspendWorkspace(ws)}
-                      className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
                         ws.isActive === false
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
                       }`}
                     >
-                      {ws.isActive === false ? '🟢 Restore Workspace' : '⚪ Suspend Workspace'}
+                      {ws.isActive === false ? (
+                        <><Play size={12} /> Restore Workspace</>
+                      ) : (
+                        <><Pause size={12} /> Suspend Workspace</>
+                      )}
                     </button>
                     <span>Updated: {new Date(ws.updatedAt || ws.createdAt || Date.now()).toLocaleDateString()}</span>
                   </div>
@@ -572,7 +576,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                  ✏️
+                  <Pencil size={18} />
                 </div>
                 <h3 className="text-lg font-bold text-white">Rename Workspace</h3>
               </div>

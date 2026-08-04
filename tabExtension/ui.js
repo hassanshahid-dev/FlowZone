@@ -129,13 +129,15 @@ const UI = {
                     <span class="tag-dot" style="background:${tagColor};"></span>
                     <span class="ws-title">${this.escapeHTML(ws.name)}</span>
                     <span class="ws-status-badge ${isClosed ? 'closed' : 'active'}">
-                        ${isClosed ? '⚪ Suspended' : '🟢 Active'}
+                        ${isClosed ? 'Suspended' : 'Active'}
                     </span>
                 </div>
                 <div class="ws-actions-top" style="display:flex; gap:4px; align-items:center;">
-                    <button class="btn-icon-xs" title="Rename Workspace" data-action="rename-ws" data-id="${id}">✏️</button>
+                    <button class="btn-icon-xs" title="Rename Workspace" data-action="rename-ws" data-id="${id}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                    </button>
                     <button class="btn-icon-xs ${isPinned ? 'active-pin' : ''}" title="${isPinned ? 'Unpin' : 'Pin'}" data-action="pin">
-                        ${isPinned ? '⭐' : '☆'}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     </button>
                 </div>
             </div>
@@ -155,8 +157,12 @@ const UI = {
                             <span class="tab-title-text" title="${this.escapeHTML(t.title || t.url)}">${this.escapeHTML(t.title || t.url)}</span>
                         </div>
                         <div class="tab-quick-actions">
-                            <button class="btn-icon-xs" title="Open Tab" data-action="open-tab" data-url="${this.escapeHTML(t.url)}">↗</button>
-                            <button class="btn-icon-xs" title="Copy URL" data-action="copy-tab" data-url="${this.escapeHTML(t.url)}">📋</button>
+                            <button class="btn-icon-xs" title="Open Tab" data-action="open-tab" data-url="${this.escapeHTML(t.url)}">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </button>
+                            <button class="btn-icon-xs" title="Copy URL" data-action="copy-tab" data-url="${this.escapeHTML(t.url)}">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
                             <button class="btn-icon-xs" title="Remove" data-action="remove-tab" data-url="${this.escapeHTML(t.url)}">&times;</button>
                         </div>
                     </div>
