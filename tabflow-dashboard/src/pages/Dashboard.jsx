@@ -17,6 +17,12 @@ export default function Dashboard() {
   const [renameWsName, setRenameWsName] = useState('');
   const [renaming, setRenaming] = useState(false);
 
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendWs, setSuspendWs] = useState(null);
+  const [selectedSuspendTabs, setSelectedSuspendTabs] = useState([]);
+  const [selectedDeleteTabs, setSelectedDeleteTabs] = useState([]);
+  const [suspending, setSuspending] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -223,11 +229,24 @@ export default function Dashboard() {
     } catch (e) {}
   };
 
-  const handleToggleSuspendWorkspace = async (ws) => {
-    const id = ws._id || ws.id;
-    const newStatus = !ws.isActive;
+  const handleOpenSuspendModal = (ws) => {
+    setSuspendWs(ws);
+    const allUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
+    setSelectedSuspendTabs(allUrls);
+    setSelectedDeleteTabs([]);
+    setShowSuspendModal(true);
+  };
 
+  const handleConfirmSuspendWorkspace = async (e) => {
+    e.preventDefault();
+    if (!suspendWs) return;
+
+    setSuspending(true);
+    const id = suspendWs._id || suspendWs.id;
     const token = localStorage.getItem('token');
+
+    let updatedTabs = (suspendWs.tabs || []).filter(t => !selectedDeleteTabs.includes(t.url));
+
     try {
       if (token && id && !id.startsWith('local_')) {
         await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
@@ -236,7 +255,7 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ isActive: newStatus })
+          body: JSON.stringify({ isActive: false, tabs: updatedTabs })
         }).catch(() => {});
       }
 
@@ -246,14 +265,59 @@ export default function Dashboard() {
         try {
           localWs = JSON.parse(storedLocal);
           const found = localWs.find(w => (w._id || w.id) === id);
-          if (found) found.isActive = newStatus;
+          if (found) {
+            found.isActive = false;
+            found.tabs = updatedTabs;
+          }
           localStorage.setItem('workSpaces', JSON.stringify(localWs));
         } catch (e) {}
       }
 
       window.postMessage({
         type: 'TABFLOW_ACTION_EVENT',
-        action: newStatus ? 'restore' : 'suspend',
+        action: 'suspend',
+        workspaceId: id,
+        data: { name: suspendWs.name, tabs: updatedTabs, closeUrls: selectedSuspendTabs }
+      }, '*');
+
+      window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
+      setShowSuspendModal(false);
+      fetchWorkspaces();
+    } catch (e) {
+    } finally {
+      setSuspending(false);
+    }
+  };
+
+  const handleRestoreWorkspace = async (ws) => {
+    const id = ws._id || ws.id;
+    const token = localStorage.getItem('token');
+    try {
+      if (token && id && !id.startsWith('local_')) {
+        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ isActive: true })
+        }).catch(() => {});
+      }
+
+      let localWs = [];
+      const storedLocal = localStorage.getItem('workSpaces');
+      if (storedLocal) {
+        try {
+          localWs = JSON.parse(storedLocal);
+          const found = localWs.find(w => (w._id || w.id) === id);
+          if (found) found.isActive = true;
+          localStorage.setItem('workSpaces', JSON.stringify(localWs));
+        } catch (e) {}
+      }
+
+      window.postMessage({
+        type: 'TABFLOW_ACTION_EVENT',
+        action: 'restore',
         workspaceId: id,
         data: { name: ws.name, tabs: ws.tabs }
       }, '*');
@@ -461,7 +525,7 @@ export default function Dashboard() {
 
                   <div className="mt-5 pt-3 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/40">
                     <button
-                      onClick={() => handleToggleSuspendWorkspace(ws)}
+                      onClick={() => ws.isActive === false ? handleRestoreWorkspace(ws) : handleOpenSuspendModal(ws)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
                         ws.isActive === false
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
@@ -617,6 +681,131 @@ export default function Dashboard() {
                 >
                   {renaming ? <RefreshCw size={14} className="animate-spin" /> : null}
                   {renaming ? 'Saving...' : 'Save Name'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUSPEND & MANAGE TABS MODAL */}
+      {showSuspendModal && suspendWs && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Pause size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Suspend Workspace</h3>
+                  <p className="text-xs text-slate-400">"{suspendWs.name}"</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSuspendModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmSuspendWorkspace} className="space-y-5">
+              {/* Section 1: Tabs to Suspend / Close */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-white flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedSuspendTabs.length === (suspendWs.tabs?.length || 0) && selectedSuspendTabs.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedSuspendTabs((suspendWs.tabs || []).map(t => t.url));
+                        } else {
+                          setSelectedSuspendTabs([]);
+                        }
+                      }}
+                      className="rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-0"
+                    />
+                    Select Tabs to Suspend (Close Browser Tabs)
+                  </label>
+                  <span className="text-[10px] text-blue-400 font-semibold">{selectedSuspendTabs.length} selected</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-2">Checked tabs will be closed in your browser to free RAM (Select All by default).</p>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+                  {suspendWs.tabs && suspendWs.tabs.length > 0 ? (
+                    suspendWs.tabs.map((tab, idx) => (
+                      <label key={idx} className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer py-1 truncate">
+                        <input
+                          type="checkbox"
+                          checked={selectedSuspendTabs.includes(tab.url)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSuspendTabs([...selectedSuspendTabs, tab.url]);
+                            } else {
+                              setSelectedSuspendTabs(selectedSuspendTabs.filter(u => u !== tab.url));
+                            }
+                          }}
+                          className="rounded bg-slate-900 border-slate-800 text-blue-600 focus:ring-0 flex-shrink-0"
+                        />
+                        <span className="truncate" title={tab.title || tab.url}>{tab.title || tab.url}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">No tabs in workspace</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 2: Tabs to Delete / Remove from Workspace */}
+              <div className="border-t border-slate-800/80 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-red-400 flex items-center gap-2">
+                    Select Tabs to Permanently Delete from Workspace
+                  </label>
+                  <span className="text-[10px] text-red-400 font-semibold">{selectedDeleteTabs.length} to delete</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-2">Checked tabs will be permanently removed from this workspace's saved tabs list.</p>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+                  {suspendWs.tabs && suspendWs.tabs.length > 0 ? (
+                    suspendWs.tabs.map((tab, idx) => (
+                      <label key={idx} className="flex items-center gap-2.5 text-xs text-slate-400 hover:text-red-300 cursor-pointer py-1 truncate">
+                        <input
+                          type="checkbox"
+                          checked={selectedDeleteTabs.includes(tab.url)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDeleteTabs([...selectedDeleteTabs, tab.url]);
+                            } else {
+                              setSelectedDeleteTabs(selectedDeleteTabs.filter(u => u !== tab.url));
+                            }
+                          }}
+                          className="rounded bg-slate-900 border-slate-800 text-red-600 focus:ring-0 flex-shrink-0"
+                        />
+                        <span className="truncate" title={tab.title || tab.url}>{tab.title || tab.url}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">No tabs in workspace</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-800/40">
+                <button
+                  type="button"
+                  onClick={() => setShowSuspendModal(false)}
+                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={suspending}
+                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  {suspending ? <RefreshCw size={14} className="animate-spin" /> : <Pause size={14} />}
+                  {suspending ? 'Suspending...' : 'Confirm & Suspend'}
                 </button>
               </div>
             </form>

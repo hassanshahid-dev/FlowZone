@@ -265,42 +265,68 @@ const UI = {
 
     openSuspendModal(ws) {
         const modal = document.getElementById('suspendWorkspaceModal');
-        const checklist = document.getElementById('suspendTabChecklist');
+        const suspendChecklist = document.getElementById('suspendTabChecklist');
+        const deleteChecklist = document.getElementById('deleteTabChecklist');
         const idInput = document.getElementById('suspendWsIdInput');
         const countSpan = document.getElementById('suspendTabSelectedCount');
+        const deleteCountSpan = document.getElementById('deleteTabSelectedCount');
         const selectAll = document.getElementById('selectAllSuspendTabs');
 
-        if (!modal || !checklist || !idInput) return;
+        if (!modal || !suspendChecklist || !idInput) return;
 
         idInput.value = ws._id || ws.id;
-        checklist.innerHTML = '';
+        suspendChecklist.innerHTML = '';
+        if (deleteChecklist) deleteChecklist.innerHTML = '';
 
+        // 1. Populate Delete Checkbox List (Saved tabs in workspace)
+        (ws.tabs || []).forEach((tab) => {
+            if (!deleteChecklist) return;
+            const row = document.createElement('label');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:5px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer; overflow:hidden; white-space:nowrap;';
+            row.innerHTML = `
+                <input type="checkbox" class="delete-tab-cb" data-url="${this.escapeHTML(tab.url)}" />
+                <span style="overflow:hidden; text-overflow:ellipsis; color:var(--text-secondary);" title="${this.escapeHTML(tab.title || tab.url)}">${this.escapeHTML(tab.title || tab.url)}</span>
+            `;
+            deleteChecklist.appendChild(row);
+        });
+
+        const updateDeleteCount = () => {
+            if (!deleteChecklist || !deleteCountSpan) return;
+            const checked = deleteChecklist.querySelectorAll('.delete-tab-cb:checked').length;
+            deleteCountSpan.textContent = `${checked} to delete`;
+        };
+        if (deleteChecklist) {
+            deleteChecklist.querySelectorAll('.delete-tab-cb').forEach(cb => cb.addEventListener('change', updateDeleteCount));
+            updateDeleteCount();
+        }
+
+        // 2. Populate Suspend Checkbox List (Live/matching open browser tabs - default SELECT ALL)
         if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
             const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
             chrome.tabs.query({ currentWindow: true }, (currentTabs) => {
                 const matchingTabs = (currentTabs || []).filter(tab => tab.url && targetUrls.some(target => isUrlMatch(tab.url, target)));
-
                 const tabsToRender = matchingTabs.length > 0 ? matchingTabs : (ws.tabs || []);
+
                 tabsToRender.forEach((tab) => {
                     const row = document.createElement('label');
-                    row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:6px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer; overflow:hidden; white-space:nowrap;';
+                    row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:5px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer; overflow:hidden; white-space:nowrap;';
                     row.innerHTML = `
                         <input type="checkbox" class="suspend-tab-cb" data-tab-id="${tab.id || ''}" data-url="${this.escapeHTML(tab.url)}" checked />
                         <span style="overflow:hidden; text-overflow:ellipsis;" title="${this.escapeHTML(tab.title || tab.url)}">${this.escapeHTML(tab.title || tab.url)}</span>
                     `;
-                    checklist.appendChild(row);
+                    suspendChecklist.appendChild(row);
                 });
 
                 const updateCount = () => {
-                    const checked = checklist.querySelectorAll('.suspend-tab-cb:checked').length;
-                    if (countSpan) countSpan.textContent = `${checked} selected`;
+                    const checked = suspendChecklist.querySelectorAll('.suspend-tab-cb:checked').length;
+                    if (countSpan) countSpan.textContent = `${checked} to close`;
                 };
 
-                checklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.addEventListener('change', updateCount));
+                suspendChecklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.addEventListener('change', updateCount));
                 if (selectAll) {
                     selectAll.checked = true;
                     selectAll.onchange = () => {
-                        checklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.checked = selectAll.checked);
+                        suspendChecklist.querySelectorAll('.suspend-tab-cb').forEach(cb => cb.checked = selectAll.checked);
                         updateCount();
                     };
                 }
@@ -310,12 +336,12 @@ const UI = {
         } else {
             (ws.tabs || []).forEach((tab) => {
                 const row = document.createElement('label');
-                row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:6px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer;';
+                row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:11px; padding:5px 0; border-bottom:1px solid var(--border-subtle); cursor:pointer;';
                 row.innerHTML = `
                     <input type="checkbox" class="suspend-tab-cb" data-url="${this.escapeHTML(tab.url)}" checked />
                     <span style="overflow:hidden; text-overflow:ellipsis;">${this.escapeHTML(tab.title || tab.url)}</span>
                 `;
-                checklist.appendChild(row);
+                suspendChecklist.appendChild(row);
             });
             modal.style.display = 'flex';
         }

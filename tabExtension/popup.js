@@ -487,33 +487,52 @@
         if (confirmSuspendWorkspaceBtn) {
             confirmSuspendWorkspaceBtn.addEventListener('click', async () => {
                 const id = document.getElementById('suspendWsIdInput').value;
-                const checklist = document.getElementById('suspendTabChecklist');
-                if (!id || !checklist) return;
+                const suspendChecklist = document.getElementById('suspendTabChecklist');
+                const deleteChecklist = document.getElementById('deleteTabChecklist');
+                if (!id) return;
 
-                const checkedBoxes = checklist.querySelectorAll('.suspend-tab-cb:checked');
+                // 1. Process tabs to permanently delete from workspace
+                const urlsToDelete = [];
+                if (deleteChecklist) {
+                    deleteChecklist.querySelectorAll('.delete-tab-cb:checked').forEach(cb => {
+                        const url = cb.getAttribute('data-url');
+                        if (url) urlsToDelete.push(url);
+                    });
+                }
+
+                // 2. Process browser tabs to close
                 const tabsToCloseIds = [];
-
-                checkedBoxes.forEach(cb => {
-                    const tabId = cb.getAttribute('data-tab-id');
-                    if (tabId && !isNaN(Number(tabId))) tabsToCloseIds.push(Number(tabId));
-                });
+                if (suspendChecklist) {
+                    suspendChecklist.querySelectorAll('.suspend-tab-cb:checked').forEach(cb => {
+                        const tabId = cb.getAttribute('data-tab-id');
+                        if (tabId && !isNaN(Number(tabId))) tabsToCloseIds.push(Number(tabId));
+                    });
+                }
 
                 if (suspendModal) suspendModal.style.display = 'none';
 
+                // Fetch current workspace and update saved tabs (removing deleted tabs)
+                const workspaces = await Storage.getWorkspaces();
+                const targetWs = workspaces.find(w => (w._id || w.id) === id);
+                let updatedTabs = targetWs ? (targetWs.tabs || []) : [];
+                if (urlsToDelete.length > 0) {
+                    updatedTabs = updatedTabs.filter(t => !urlsToDelete.includes(t.url));
+                }
+
                 if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.remove && tabsToCloseIds.length > 0) {
                     chrome.tabs.remove(tabsToCloseIds, async () => {
-                        await Storage.updateWorkspace(id, { isActive: false });
-                        await API.updateWorkspace(id, { isActive: false });
+                        await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
+                        await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
                         currentWorkspaces = await Storage.getWorkspaces();
                         UI.displayWorkspaces(currentWorkspaces);
-                        UI.showToast(`Closed ${tabsToCloseIds.length} tabs & suspended workspace`, 'success');
+                        UI.showToast(`Suspended workspace (${tabsToCloseIds.length} tabs closed${urlsToDelete.length > 0 ? `, ${urlsToDelete.length} tabs deleted` : ''})`, 'success');
                     });
                 } else {
-                    await Storage.updateWorkspace(id, { isActive: false });
-                    await API.updateWorkspace(id, { isActive: false });
+                    await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
+                    await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
                     currentWorkspaces = await Storage.getWorkspaces();
                     UI.displayWorkspaces(currentWorkspaces);
-                    UI.showToast('Suspended workspace', 'info');
+                    UI.showToast(`Suspended workspace${urlsToDelete.length > 0 ? ` (${urlsToDelete.length} tabs deleted)` : ''}`, 'info');
                 }
             });
         }

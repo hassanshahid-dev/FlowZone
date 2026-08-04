@@ -358,27 +358,43 @@
             </div>
         </div>
 
-        <!-- SUSPEND WORKSPACE MODAL WITH TAB SELECTION -->
+        <!-- SUSPEND WORKSPACE MODAL WITH DUAL TAB SELECTION -->
         <div class="modal-overlay" id="suspendWorkspaceModal" style="display:none;">
-            <div class="modal-card" style="max-width: 360px;">
+            <div class="modal-card" style="max-width: 380px;">
                 <div class="modal-header">
-                    <h3>Close & Suspend Workspace</h3>
+                    <h3>Suspend & Manage Workspace Tabs</h3>
                     <button class="modal-close" id="closeSuspendModalBtn">&times;</button>
                 </div>
                 <div class="modal-body" style="margin-top: 14px;">
                     <input type="hidden" id="suspendWsIdInput" />
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Select open tabs to close and suspend to reclaim RAM memory:</p>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px;">
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:600; color:var(--text-main);">
-                            <input type="checkbox" id="selectAllSuspendTabs" checked /> Select All
-                        </label>
-                        <span id="suspendTabSelectedCount" style="color:var(--text-muted);">0 selected</span>
+                    
+                    <!-- Section 1: Tabs to Suspend (Close Browser Tabs) -->
+                    <div style="margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <label style="font-size:12px; font-weight:700; color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="selectAllSuspendTabs" checked /> Select Tabs to Suspend (Close)
+                            </label>
+                            <span id="suspendTabSelectedCount" style="font-size:10px; color:var(--accent-blue); font-weight:600;">0 selected</span>
+                        </div>
+                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Checked tabs will be closed to free RAM memory (defaults to Select All).</p>
+                        <div class="modal-tab-checklist" id="suspendTabChecklist" style="max-height: 130px; overflow-y: auto;"></div>
                     </div>
-                    <div class="modal-tab-checklist" id="suspendTabChecklist" style="max-height: 180px; overflow-y: auto;"></div>
+
+                    <!-- Section 2: Tabs to Remove/Delete from Workspace -->
+                    <div style="border-top:1px solid var(--border-subtle); padding-top:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <label style="font-size:12px; font-weight:700; color:var(--accent-rose); display:flex; align-items:center; gap:6px;">
+                                Select Tabs to Permanently Delete from Workspace
+                            </label>
+                            <span id="deleteTabSelectedCount" style="font-size:10px; color:var(--accent-rose); font-weight:600;">0 selected</span>
+                        </div>
+                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Checked tabs will be permanently removed from this workspace.</p>
+                        <div class="modal-tab-checklist" id="deleteTabChecklist" style="max-height: 110px; overflow-y: auto;"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-secondary" id="cancelSuspendModalBtn">Cancel</button>
-                    <button class="btn-primary" id="confirmSuspendWorkspaceBtn" style="background:var(--accent-rose);">Close Selected Tabs</button>
+                    <button class="btn-primary" id="confirmSuspendWorkspaceBtn" style="background:var(--accent-rose);">Confirm & Suspend</button>
                 </div>
             </div>
         </div>
