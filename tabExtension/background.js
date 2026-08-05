@@ -84,7 +84,7 @@ function autoSyncActiveWorkspace() {
                 if (!tabs || tabs.length === 0) return;
 
                 const liveTabsList = tabs
-                    .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://'))
+                    .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
                     .map(t => ({
                         title: t.title || t.url,
                         url: t.url,

@@ -101,11 +101,13 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    window.postMessage({ type: 'TABFLOW_LOGOUT_EVENT' }, '*');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('workSpaces');
-    navigate('/login');
+    if (window.confirm("Are you sure you want to log out of your TabFlow account?")) {
+      window.postMessage({ type: 'TABFLOW_LOGOUT_EVENT' }, '*');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('workSpaces');
+      navigate('/login');
+    }
   };
 
   const handleConfirmCreateWorkspace = async (e) => {
@@ -123,10 +125,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           name: newWsName.trim(),
-          tabs: [
-            { title: 'Google', url: 'https://google.com' },
-            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
-          ],
+          tabs: [],
           tag: selectedTag
         })
       }).catch(() => fetch('http://localhost:5000/api/workspaces', {
@@ -137,10 +136,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           name: newWsName.trim(),
-          tabs: [
-            { title: 'Google', url: 'https://google.com' },
-            { title: 'TabFlow Cloud', url: 'https://tabflow-dashboard-eight.vercel.app' }
-          ],
+          tabs: [],
           tag: selectedTag
         })
       }));

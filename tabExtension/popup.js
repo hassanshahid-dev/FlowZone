@@ -280,6 +280,9 @@
                 userDropdown.classList.remove('show');
                 const session = await Auth.getUser();
                 if (session && session.token) {
+                    if (!confirm("Are you sure you want to log out of your TabFlow account?")) {
+                        return;
+                    }
                     await Auth.clearSession();
                     updateUserMenu({ token: null, user: null });
                     UI.showToast('Logged out of cloud account', 'info');
@@ -390,12 +393,12 @@
                 const nameInput = document.getElementById('newWsNameInput');
                 const wsName = nameInput.value.trim() || 'My Workspace';
 
-                // Read selected tabs safely
+                // Read selected tabs safely (filtering out empty/chrome/newtab pages)
                 const selectedTabs = [];
                 document.querySelectorAll('.modal-tab-checkbox:checked').forEach(cb => {
                     const tabUrl = cb.getAttribute('data-url') || cb.dataset.url || '';
-                    const tabTitle = cb.getAttribute('data-title') || cb.dataset.title || tabUrl || 'New Tab';
-                    if (tabUrl) {
+                    const tabTitle = cb.getAttribute('data-title') || cb.dataset.title || tabUrl || 'Tab';
+                    if (tabUrl && !tabUrl.startsWith('chrome://') && !tabUrl.startsWith('chrome-extension://') && tabUrl !== 'about:blank' && !tabUrl.includes('newtab') && !tabUrl.includes('new-tab-page')) {
                         selectedTabs.push({
                             title: tabTitle,
                             url: tabUrl,
@@ -404,14 +407,12 @@
                     }
                 });
 
-                if (selectedTabs.length === 0) {
-                    if (Array.isArray(currentOpenTabs) && currentOpenTabs.length > 0) {
-                        currentOpenTabs.forEach(t => {
-                            selectedTabs.push({ title: t.title || 'New Tab', url: t.url || 'https://google.com', favIconUrl: t.favIconUrl });
-                        });
-                    } else {
-                        selectedTabs.push({ title: 'New Tab', url: 'https://google.com' });
-                    }
+                if (selectedTabs.length === 0 && Array.isArray(currentOpenTabs) && currentOpenTabs.length > 0) {
+                    currentOpenTabs.forEach(t => {
+                        if (t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page')) {
+                            selectedTabs.push({ title: t.title || t.url, url: t.url, favIconUrl: t.favIconUrl });
+                        }
+                    });
                 }
 
                 const session = await Auth.getUser();
@@ -655,9 +656,11 @@
 
         container.innerHTML = '';
         getTabs(tabs => {
-            if (countLabel) countLabel.textContent = `${tabs.length} selected`;
+            const realTabs = (tabs || []).filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'));
 
-            tabs.forEach(tab => {
+            if (countLabel) countLabel.textContent = `${realTabs.length} selected`;
+
+            realTabs.forEach(tab => {
                 const row = document.createElement('label');
                 row.className = 'tab-item-row';
                 row.style.cursor = 'pointer';
