@@ -205,15 +205,11 @@ updateTabCache();
 if (typeof chrome !== 'undefined' && chrome.tabs) {
     chrome.tabs.onCreated.addListener((tab) => {
         if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
-        if (tab.windowId) autoSyncActiveWorkspace(tab.windowId);
     });
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && tab.url !== 'about:blank') {
             tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
-        }
-        if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
-            if (tab && tab.windowId) autoSyncActiveWorkspace(tab.windowId);
         }
     });
 

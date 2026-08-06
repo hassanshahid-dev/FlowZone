@@ -427,6 +427,15 @@
                 <div class="modal-body" style="margin-top: 14px;">
                     <input type="hidden" id="suspendWsIdInput" />
                     
+                    <!-- Section 0: Sync Open Tabs Prompt -->
+                    <div style="background:var(--bg-card-hover); padding:10px 12px; border-radius:8px; border:1px solid var(--border-subtle); margin-bottom:14px;">
+                        <label style="font-size:12px; font-weight:700; color:var(--accent-blue); cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="syncOpenTabsOnSuspend" checked />
+                            🔄 Sync workspace with current open tabs before suspending
+                        </label>
+                        <p style="font-size:10px; color:var(--text-muted); margin-top:4px; margin-left:24px;">Captures open browser tabs into this workspace before closing them.</p>
+                    </div>
+
                     <!-- Section 1: Tabs to Suspend (Close Browser Tabs) -->
                     <div style="margin-bottom:14px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">

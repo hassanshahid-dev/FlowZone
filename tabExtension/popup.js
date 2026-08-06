@@ -612,6 +612,7 @@
                 const id = document.getElementById('suspendWsIdInput').value;
                 const suspendChecklist = document.getElementById('suspendTabChecklist');
                 const deleteChecklist = document.getElementById('deleteTabChecklist');
+                const syncOpenTabsCb = document.getElementById('syncOpenTabsOnSuspend');
                 if (!id) return;
 
                 // 1. Process tabs to permanently delete from workspace
@@ -634,16 +635,33 @@
 
                 if (suspendModal) suspendModal.style.display = 'none';
 
-                // Fetch current workspace and update saved tabs (removing deleted tabs)
+                // Fetch current workspace
                 const workspaces = await Storage.getWorkspaces();
                 const targetWs = workspaces.find(w => (w._id || w.id) === id);
                 let updatedTabs = targetWs ? (targetWs.tabs || []) : [];
+
+                // Optional: Sync open tabs from dedicated window if prompt checkbox is checked
+                if (syncOpenTabsCb && syncOpenTabsCb.checked && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+                    const currentTabs = await new Promise(resolve => chrome.tabs.query({ currentWindow: true }, resolve));
+                    const liveTabsList = (currentTabs || [])
+                        .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
+                        .map(t => ({
+                            title: t.title || t.url,
+                            url: t.url,
+                            favIconUrl: t.favIconUrl
+                        }));
+
+                    if (liveTabsList.length > 0) {
+                        updatedTabs = liveTabsList;
+                    }
+                }
+
                 if (urlsToDelete.length > 0) {
                     updatedTabs = updatedTabs.filter(t => !urlsToDelete.includes(t.url));
                 }
 
                 // 1. Mark workspace as suspended in Storage immediately before removing tabs
-                await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
+                await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs, windowId: null });
                 await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
 
                 // 2. Remove tabs from browser window
@@ -656,7 +674,7 @@
                 } else {
                     currentWorkspaces = await Storage.getWorkspaces();
                     UI.displayWorkspaces(currentWorkspaces);
-                    UI.showToast(`Suspended workspace${urlsToDelete.length > 0 ? ` (${urlsToDelete.length} tabs deleted)` : ''}`, 'info');
+                    UI.showToast(`Suspended workspace`, 'success');
                 }
             });
         }
