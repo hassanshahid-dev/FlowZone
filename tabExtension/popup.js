@@ -209,66 +209,6 @@
             } catch (e) {}
         }
 
-        // Pending Tab Deletion Confirmation Banner Controller
-        function checkPendingPrompts() {
-            if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-            chrome.storage.local.get('pendingTabDeletions', (data) => {
-                const pendingList = data.pendingTabDeletions || {};
-                const keys = Object.keys(pendingList);
-                const banner = document.getElementById('tabClosePromptBanner');
-                if (!banner) return;
-
-                if (keys.length === 0) {
-                    banner.style.display = 'none';
-                    return;
-                }
-
-                const promptId = keys[0];
-                const pending = pendingList[promptId];
-
-                const titleEl = document.getElementById('promptBannerTitle');
-                const textEl = document.getElementById('promptBannerText');
-                const yesBtn = document.getElementById('promptConfirmYesBtn');
-                const noBtn = document.getElementById('promptConfirmNoBtn');
-
-                if (titleEl) titleEl.textContent = `Delete Tab from "${pending.wsName}"?`;
-                if (textEl) textEl.textContent = `Closed "${pending.tabTitle}". Delete from "${pending.wsName}" workspace?`;
-                banner.style.display = 'block';
-
-                if (yesBtn) {
-                    yesBtn.onclick = async () => {
-                        banner.style.display = 'none';
-                        await Storage.removeTabFromWorkspace(pending.workspaceId, pending.tabUrl);
-                        delete pendingList[promptId];
-                        chrome.storage.local.set({ pendingTabDeletions: pendingList });
-                        chrome.action.setBadgeText({ text: '' });
-                        currentWorkspaces = await Storage.getWorkspaces();
-                        UI.displayWorkspaces(currentWorkspaces, getFilterValue(), getSearchValue());
-                        UI.showToast(`Deleted tab from "${pending.wsName}"`, 'info');
-                    };
-                }
-
-                if (noBtn) {
-                    noBtn.onclick = () => {
-                        banner.style.display = 'none';
-                        delete pendingList[promptId];
-                        chrome.storage.local.set({ pendingTabDeletions: pendingList });
-                        chrome.action.setBadgeText({ text: '' });
-                    };
-                }
-            });
-        }
-
-        checkPendingPrompts();
-
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-            chrome.runtime.onMessage.addListener((message) => {
-                if (message && message.type === 'FLOWZONE_TAB_CLOSED_PROMPT') {
-                    checkPendingPrompts();
-                }
-            });
-        }
-
         // Search Input Filter
         const searchInput = document.getElementById('searchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
