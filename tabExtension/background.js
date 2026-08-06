@@ -88,8 +88,8 @@ function autoSyncActiveWorkspace() {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            // Target explicit active workspace or fallback to primary workspace
-            const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
+            // Target strictly active workspace; stop sync if suspended or closed
+            const activeWs = workspaces.find(ws => ws.isActive === true);
             if (!activeWs) return;
 
             chrome.tabs.query({}, (tabs) => {
@@ -173,7 +173,8 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
+            // Target strictly active workspace; stop tab removal prompt if suspended or closed
+            const activeWs = workspaces.find(ws => ws.isActive === true);
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
             // Search if closed tab was saved in active workspace

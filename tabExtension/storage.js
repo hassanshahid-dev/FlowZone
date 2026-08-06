@@ -82,7 +82,13 @@ const Storage = {
     },
 
     async activateWorkspace(id) {
-        return await this.updateWorkspace(id, { isActive: true });
+        const workspaces = await this.getWorkspaces();
+        const updated = workspaces.map(ws => {
+            const isTarget = (ws._id || ws.id) === id;
+            return { ...ws, isActive: isTarget, updatedAt: new Date().toISOString() };
+        });
+        await this.saveWorkspaces(updated);
+        return updated;
     },
 
     async togglePinWorkspace(id) {
