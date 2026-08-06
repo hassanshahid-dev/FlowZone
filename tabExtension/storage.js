@@ -81,11 +81,18 @@ const Storage = {
         return await this.updateWorkspace(id, { isActive: false });
     },
 
-    async activateWorkspace(id) {
+    async activateWorkspace(id, windowId = null) {
         const workspaces = await this.getWorkspaces();
         const updated = workspaces.map(ws => {
-            const isTarget = (ws._id || ws.id) === id;
-            return { ...ws, isActive: isTarget, updatedAt: new Date().toISOString() };
+            if ((ws._id || ws.id) === id) {
+                return {
+                    ...ws,
+                    isActive: true,
+                    ...(windowId ? { windowId } : {}),
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return ws;
         });
         await this.saveWorkspaces(updated);
         return updated;

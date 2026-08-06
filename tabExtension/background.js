@@ -88,52 +88,93 @@ function autoSyncActiveWorkspace() {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            // Target strictly active workspace; stop sync if suspended or closed
-            const activeWs = workspaces.find(ws => ws.isActive === true);
-            if (!activeWs) return;
+            const activeWorkspaces = workspaces.filter(ws => ws.isActive === true);
+            if (activeWorkspaces.length === 0) return;
 
-            const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
-            chrome.tabs.query(queryFilter, (tabs) => {
-                if (!tabs || tabs.length === 0) return;
+            let hasChanges = false;
+            let pendingQueries = activeWorkspaces.length;
 
-                if (tabs[0] && tabs[0].windowId && !activeWs.windowId) {
-                    activeWs.windowId = tabs[0].windowId;
-                }
+            activeWorkspaces.forEach(activeWs => {
+                const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
 
-                const liveTabsList = tabs
-                    .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
-                    .map(t => ({
-                        title: t.title || t.url,
-                        url: t.url,
-                        favIconUrl: t.favIconUrl
-                    }));
+                chrome.tabs.query(queryFilter, (tabs) => {
+                    pendingQueries--;
+                    if (tabs && tabs.length > 0) {
+                        if (tabs[0].windowId && !activeWs.windowId) {
+                            activeWs.windowId = tabs[0].windowId;
+                        }
 
-                // Save only the latest stage of live open tabs for the active workspace
-                activeWs.tabs = liveTabsList;
-                activeWs.updatedAt = new Date().toISOString();
+                        const liveTabsList = tabs
+                            .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
+                            .map(t => ({
+                                title: t.title || t.url,
+                                url: t.url,
+                                favIconUrl: t.favIconUrl
+                            }));
 
-                chrome.storage.local.set({ workSpaces: workspaces }, () => {
-                    if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
-                        fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${data.token}`
-                            },
-                            body: JSON.stringify({ tabs: liveTabsList })
-                        }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${data.token}`
-                            },
-                            body: JSON.stringify({ tabs: liveTabsList })
-                        })).catch(() => {});
+                        if (liveTabsList.length > 0) {
+                            activeWs.tabs = liveTabsList;
+                            activeWs.updatedAt = new Date().toISOString();
+                            hasChanges = true;
+                        }
+                    }
+
+                    if (pendingQueries === 0 && hasChanges) {
+                        chrome.storage.local.set({ workSpaces: workspaces }, () => {
+                            if (data.token) {
+                                activeWorkspaces.forEach(ws => {
+                                    if (ws._id && !ws._id.startsWith('local_')) {
+                                        fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${ws._id}`, {
+                                            method: 'PUT',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${data.token}`
+                                            },
+                                            body: JSON.stringify({ tabs: ws.tabs })
+                                        }).catch(() => {});
+                                    }
+                                });
+                            }
+                        });
                     }
                 });
             });
         });
     }, 300);
+}
+
+// Window closure listener to automatically suspend workspaces when their Chrome window is closed
+if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.onRemoved) {
+    chrome.windows.onRemoved.addListener((closedWinId) => {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
+        chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+            const workspaces = data.workSpaces || [];
+            let updated = false;
+
+            workspaces.forEach(ws => {
+                if (ws.windowId === closedWinId) {
+                    ws.isActive = false;
+                    ws.windowId = undefined;
+                    updated = true;
+
+                    if (data.token && ws._id && !ws._id.startsWith('local_')) {
+                        fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${ws._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${data.token}`
+                            },
+                            body: JSON.stringify({ isActive: false })
+                        }).catch(() => {});
+                    }
+                }
+            });
+
+            if (updated) {
+                chrome.storage.local.set({ workSpaces: workspaces });
+            }
+        });
+    });
 }
 
 const tabCache = new Map();
