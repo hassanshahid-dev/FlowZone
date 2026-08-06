@@ -88,16 +88,14 @@ function autoSyncActiveWorkspace() {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            const activeWorkspaces = workspaces.filter(ws => ws.isActive === true);
+            const activeWorkspaces = workspaces.filter(ws => ws.isActive === true && typeof ws.windowId === 'number');
             if (activeWorkspaces.length === 0) return;
 
             let hasChanges = false;
             let pendingQueries = activeWorkspaces.length;
 
             activeWorkspaces.forEach(activeWs => {
-                const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
-
-                chrome.tabs.query(queryFilter, (tabs) => {
+                chrome.tabs.query({ windowId: activeWs.windowId }, (tabs) => {
                     pendingQueries--;
                     if (tabs && tabs.length > 0) {
                         if (tabs[0].windowId && !activeWs.windowId) {

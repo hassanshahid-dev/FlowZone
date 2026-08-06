@@ -473,11 +473,22 @@ const UI = {
             openTabs(urlsToOpen);
         }
 
-        if (API.updateWorkspace) API.updateWorkspace(wsId, { isActive: true });
-        Storage.activateWorkspace(wsId).then(updated => {
-            this.displayWorkspaces(updated);
-            this.showToast(`Restored "${ws.name}" (${urlsToOpen.length} tabs opened)`, 'success');
-        });
+        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+            chrome.windows.getCurrent((currentWin) => {
+                const winId = currentWin ? currentWin.id : null;
+                if (API.updateWorkspace) API.updateWorkspace(wsId, { isActive: true, windowId: winId });
+                Storage.activateWorkspace(wsId, winId).then(updated => {
+                    this.displayWorkspaces(updated);
+                    this.showToast(`Restored "${ws.name}" (${urlsToOpen.length} tabs opened)`, 'success');
+                });
+            });
+        } else {
+            if (API.updateWorkspace) API.updateWorkspace(wsId, { isActive: true });
+            Storage.activateWorkspace(wsId).then(updated => {
+                this.displayWorkspaces(updated);
+                this.showToast(`Restored "${ws.name}" (${urlsToOpen.length} tabs opened)`, 'success');
+            });
+        }
     },
 
     async restoreWorkspace(ws) {
