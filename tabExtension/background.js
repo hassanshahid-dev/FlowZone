@@ -103,9 +103,8 @@ function autoSyncActiveWorkspace() {
                         favIconUrl: t.favIconUrl
                     }));
 
-                // Save only the latest stage of live open tabs (replaces old URLs on navigation)
+                // Save only the latest stage of live open tabs for the active workspace
                 activeWs.tabs = liveTabsList;
-                activeWs.isActive = true;
                 activeWs.updatedAt = new Date().toISOString();
 
                 chrome.storage.local.set({ workSpaces: workspaces }, () => {

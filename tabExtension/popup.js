@@ -630,17 +630,18 @@
                     updatedTabs = updatedTabs.filter(t => !urlsToDelete.includes(t.url));
                 }
 
+                // 1. Mark workspace as suspended in Storage immediately before removing tabs
+                await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
+                await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
+
+                // 2. Remove tabs from browser window
                 if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.remove && tabsToCloseIds.length > 0) {
                     chrome.tabs.remove(tabsToCloseIds, async () => {
-                        await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
-                        await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
                         currentWorkspaces = await Storage.getWorkspaces();
                         UI.displayWorkspaces(currentWorkspaces);
                         UI.showToast(`Suspended workspace (${tabsToCloseIds.length} tabs closed${urlsToDelete.length > 0 ? `, ${urlsToDelete.length} tabs deleted` : ''})`, 'success');
                     });
                 } else {
-                    await Storage.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
-                    await API.updateWorkspace(id, { isActive: false, tabs: updatedTabs });
                     currentWorkspaces = await Storage.getWorkspaces();
                     UI.displayWorkspaces(currentWorkspaces);
                     UI.showToast(`Suspended workspace${urlsToDelete.length > 0 ? ` (${urlsToDelete.length} tabs deleted)` : ''}`, 'info');
