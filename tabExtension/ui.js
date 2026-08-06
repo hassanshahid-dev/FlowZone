@@ -273,6 +273,20 @@ const UI = {
     },
 
     openSuspendModal(ws) {
+        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+            chrome.windows.getCurrent((currentWin) => {
+                if (currentWin && ws.windowId && ws.windowId !== currentWin.id) {
+                    this.showToast(`To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
+                    return;
+                }
+                this.renderSuspendModalContent(ws);
+            });
+        } else {
+            this.renderSuspendModalContent(ws);
+        }
+    },
+
+    renderSuspendModalContent(ws) {
         const modal = document.getElementById('suspendWorkspaceModal');
         const suspendChecklist = document.getElementById('suspendTabChecklist');
         const deleteChecklist = document.getElementById('deleteTabChecklist');
