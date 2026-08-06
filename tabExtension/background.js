@@ -76,11 +76,13 @@ function autoSyncActiveWorkspace() {
 
         chrome.storage.local.get(['workSpaces', 'token'], (data) => {
             const workspaces = data.workSpaces || [];
-            const activeWs = workspaces.find(ws => ws.isActive);
+            if (workspaces.length === 0) return;
 
+            // Target explicit active workspace or fallback to primary workspace
+            const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
             if (!activeWs) return;
 
-            chrome.tabs.query({ currentWindow: true }, (tabs) => {
+            chrome.tabs.query({}, (tabs) => {
                 if (!tabs || tabs.length === 0) return;
 
                 const liveTabsList = tabs
@@ -95,7 +97,7 @@ function autoSyncActiveWorkspace() {
 
                 const existingTabs = Array.isArray(activeWs.tabs) ? [...activeWs.tabs] : [];
 
-                // Merge newly opened tabs and update existing tab titles/urls without auto-deleting
+                // Merge newly opened tabs and update existing tab titles/urls
                 liveTabsList.forEach(liveTab => {
                     const matchIndex = existingTabs.findIndex(t => isUrlMatch(t.url, liveTab.url));
                     if (matchIndex >= 0) {
@@ -106,11 +108,13 @@ function autoSyncActiveWorkspace() {
                             existingTabs[matchIndex].favIconUrl = liveTab.favIconUrl;
                         }
                     } else {
+                        // Newly opened browser tab -> append to active workspace!
                         existingTabs.push(liveTab);
                     }
                 });
 
                 activeWs.tabs = existingTabs;
+                activeWs.isActive = true;
                 activeWs.updatedAt = new Date().toISOString();
 
                 chrome.storage.local.set({ workSpaces: workspaces }, () => {
@@ -134,7 +138,7 @@ function autoSyncActiveWorkspace() {
                 });
             });
         });
-    }, 800);
+    }, 300);
 }
 
 // Tab Cache & Pending Deletion Confirmation Map
