@@ -430,7 +430,7 @@ export default function Dashboard() {
               {(() => {
                 let totalMb = 0;
                 workspaces.forEach(ws => {
-                  if (ws.isActive === false || ws.status === 'suspended') {
+                  if (ws.isActive === false) {
                     (ws.tabs || []).forEach(t => {
                       if (t.memoryMb && typeof t.memoryMb === 'number') {
                         totalMb += t.memoryMb;
