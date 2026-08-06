@@ -156,7 +156,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
             if (action === 'suspend') {
                 // Suspend Action: Close matching open browser tabs
-                chrome.tabs.query({ currentWindow: true }, (tabs) => {
+                const queryFilter = (targetWs && targetWs.windowId) ? { windowId: targetWs.windowId } : { currentWindow: true };
+                chrome.tabs.query(queryFilter, (tabs) => {
                     if (tabs && tabs.length > 0 && targetWs && Array.isArray(targetWs.tabs)) {
                         const targetUrls = targetWs.tabs.map(t => t.url).filter(Boolean);
                         const tabIdsToRemove = tabs
