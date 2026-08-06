@@ -525,6 +525,14 @@
                     });
                 }
 
+                let currentWinId = undefined;
+                if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+                    try {
+                        const win = await new Promise(resolve => chrome.windows.getCurrent(resolve));
+                        if (win && win.id) currentWinId = win.id;
+                    } catch(e) {}
+                }
+
                 const session = await Auth.getUser();
                 let created = null;
                 if (session && session.token) {
@@ -540,10 +548,14 @@
                         tabs: selectedTabs,
                         tag: selectedTag || 'Indigo',
                         isActive: true,
+                        windowId: currentWinId,
                         isPinned: false,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                     };
+                } else {
+                    created.windowId = currentWinId;
+                    created.isActive = true;
                 }
 
                 await Storage.addWorkspace(created);

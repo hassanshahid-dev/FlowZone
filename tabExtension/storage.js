@@ -45,6 +45,7 @@ const Storage = {
             name: newWorkspace.name || 'My Workspace',
             tabs: Array.isArray(newWorkspace.tabs) ? newWorkspace.tabs : [],
             isActive: newWorkspace.isActive !== undefined ? newWorkspace.isActive : true,
+            windowId: newWorkspace.windowId || undefined,
             isPinned: !!newWorkspace.isPinned,
             tag: newWorkspace.tag || 'Indigo',
             createdAt: newWorkspace.createdAt || new Date().toISOString(),
