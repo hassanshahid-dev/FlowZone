@@ -525,32 +525,47 @@ const UI = {
     async restoreWorkspace(ws) {
         const id = ws._id || ws.id;
         const workspaces = await Storage.getWorkspaces();
-        const otherActive = workspaces.find(w => (w._id || w.id) !== id && w.isActive);
 
-        getTabs(liveTabs => {
-            const validLiveTabs = (liveTabs || []).filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank');
-            const hasExistingTabs = validLiveTabs.length > 0;
+        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+            chrome.windows.getCurrent((currentWin) => {
+                const currentWinId = currentWin ? currentWin.id : null;
+                const otherActiveInCurrentWindow = workspaces.find(w => (w._id || w.id) !== id && w.isActive && w.windowId === currentWinId);
 
-            if (otherActive || hasExistingTabs) {
-                const modal = document.getElementById('restoreSafetyModal');
-                const idInput = document.getElementById('restoreSafetyWsIdInput');
-                const msgEl = document.getElementById('restoreSafetyMessage');
+                getTabs(liveTabs => {
+                    const validLiveTabs = (liveTabs || []).filter(t => 
+                        t.url && 
+                        !t.url.startsWith('chrome://') && 
+                        !t.url.startsWith('chrome-extension://') && 
+                        t.url !== 'about:blank' && 
+                        !t.url.includes('newtab') && 
+                        !t.url.includes('new-tab-page')
+                    );
+                    const hasExistingTabs = validLiveTabs.length > 0;
 
-                if (modal && idInput && msgEl) {
-                    idInput.value = id;
-                    if (otherActive) {
-                        msgEl.textContent = `Workspace "${otherActive.name}" is already active. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
-                    } else {
-                        msgEl.textContent = `You have ${validLiveTabs.length} open tab(s) in this window. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
+                    if (otherActiveInCurrentWindow || hasExistingTabs) {
+                        const modal = document.getElementById('restoreSafetyModal');
+                        const idInput = document.getElementById('restoreSafetyWsIdInput');
+                        const msgEl = document.getElementById('restoreSafetyMessage');
+
+                        if (modal && idInput && msgEl) {
+                            idInput.value = id;
+                            if (otherActiveInCurrentWindow) {
+                                msgEl.textContent = `Workspace "${otherActiveInCurrentWindow.name}" is already active in this window. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
+                            } else {
+                                msgEl.textContent = `You have ${validLiveTabs.length} open tab(s) in this window. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
+                            }
+                            modal.style.display = 'flex';
+                            return;
+                        }
                     }
-                    modal.style.display = 'flex';
-                    return;
-                }
-            }
 
-            // Otherwise restore directly in current window
+                    // Otherwise restore directly in current window
+                    this.restoreInCurrentWindow(id);
+                });
+            });
+        } else {
             this.restoreInCurrentWindow(id);
-        });
+        }
     },
 
     renderOpenTabs(tabs, searchQuery = '') {
