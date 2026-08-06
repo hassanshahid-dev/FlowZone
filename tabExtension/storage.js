@@ -1,4 +1,4 @@
-// storage.js - TabFlow Local Storage Controller
+// storage.js - FlowZone Local Storage Controller
 
 const Storage = {
     async getWorkspaces() {

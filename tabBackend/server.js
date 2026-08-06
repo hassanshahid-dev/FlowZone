@@ -51,7 +51,7 @@ const connectDb = async (req, res, next) => {
 
 // Instant Health Check Endpoint (returns immediately without waiting for DB middleware)
 app.get(['/', '/health', '/api/health'], (req, res) => {
-    res.json({ status: 'ok', message: 'TabFlow API running', dbState: mongoose.connection.readyState });
+    res.json({ status: 'ok', message: 'FlowZone API running', dbState: mongoose.connection.readyState });
 });
 
 app.use(connectDb);
@@ -64,7 +64,7 @@ app.use('/api/workspaces', workspaceRoutes);
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const port = process.env.PORT || 5000;
     app.listen(port, () => {
-        console.log(`🚀 TabFlow Local Backend running on http://localhost:${port}`);
+        console.log(`🚀 FlowZone Local Backend running on http://localhost:${port}`);
     });
 }
 

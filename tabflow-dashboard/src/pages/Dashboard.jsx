@@ -32,12 +32,13 @@ export default function Dashboard() {
     }
 
     // Broadcast session token to Chrome Extension
+    window.postMessage({ type: 'FLOWZONE_SYNC_SESSION' }, '*');
     window.postMessage({ type: 'TABFLOW_SYNC_SESSION' }, '*');
 
     fetchWorkspaces();
 
     const handleMessage = (e) => {
-      if (e.data && (e.data.type === 'TABFLOW_SYNC_SESSION_DONE' || e.data.type === 'TABFLOW_SYNC_WORKSPACES')) {
+      if (e.data && (e.data.type === 'FLOWZONE_SYNC_SESSION_DONE' || e.data.type === 'TABFLOW_SYNC_SESSION_DONE' || e.data.type === 'FLOWZONE_SYNC_WORKSPACES' || e.data.type === 'TABFLOW_SYNC_WORKSPACES')) {
         fetchWorkspaces();
       }
     };
@@ -101,7 +102,8 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out of your TabFlow account?")) {
+    if (window.confirm("Are you sure you want to log out of your FlowZone account?")) {
+      window.postMessage({ type: 'FLOWZONE_LOGOUT_EVENT' }, '*');
       window.postMessage({ type: 'TABFLOW_LOGOUT_EVENT' }, '*');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -187,7 +189,9 @@ export default function Dashboard() {
         } catch (e) {}
       }
 
+      window.postMessage({ type: 'FLOWZONE_ACTION_EVENT', action: 'rename', workspaceId: renameWsId, data: { name: renameWsName.trim() } }, '*');
       window.postMessage({ type: 'TABFLOW_ACTION_EVENT', action: 'rename', workspaceId: renameWsId, data: { name: renameWsName.trim() } }, '*');
+      window.postMessage({ type: 'FLOWZONE_SYNC_WORKSPACES' }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       setShowRenameModal(false);
       fetchWorkspaces();
@@ -219,7 +223,9 @@ export default function Dashboard() {
         } catch (e) {}
       }
 
+      window.postMessage({ type: 'FLOWZONE_ACTION_EVENT', action: 'delete', workspaceId: id }, '*');
       window.postMessage({ type: 'TABFLOW_ACTION_EVENT', action: 'delete', workspaceId: id }, '*');
+      window.postMessage({ type: 'FLOWZONE_SYNC_WORKSPACES' }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       fetchWorkspaces();
     } catch (e) {}
@@ -270,12 +276,19 @@ export default function Dashboard() {
       }
 
       window.postMessage({
+        type: 'FLOWZONE_ACTION_EVENT',
+        action: 'suspend',
+        workspaceId: id,
+        data: { name: suspendWs.name, tabs: updatedTabs, closeUrls: selectedSuspendTabs }
+      }, '*');
+      window.postMessage({
         type: 'TABFLOW_ACTION_EVENT',
         action: 'suspend',
         workspaceId: id,
         data: { name: suspendWs.name, tabs: updatedTabs, closeUrls: selectedSuspendTabs }
       }, '*');
 
+      window.postMessage({ type: 'FLOWZONE_SYNC_WORKSPACES' }, '*');
       window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
       setShowSuspendModal(false);
       fetchWorkspaces();
@@ -331,7 +344,7 @@ export default function Dashboard() {
           <TabFlowLogoSvg className="w-8 h-6 transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="text-base font-bold tracking-tight text-white leading-tight">
-              TAB FLOW
+              FLOW ZONE
             </span>
             <span className="text-[8px] font-bold tracking-widest text-blue-400 uppercase">
               CLOUD DASHBOARD
@@ -546,7 +559,7 @@ export default function Dashboard() {
 
       {/* Footer */}
       <footer className="px-8 py-4 text-center text-xs text-slate-600 border-t border-slate-900">
-        © 2026 TabFlow Cloud - Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
+        © 2026 FlowZone Cloud - Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
       </footer>
 
       {/* CREATE WORKSPACE MODAL */}

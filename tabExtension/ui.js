@@ -369,9 +369,23 @@ const UI = {
                         favIconUrl: t.favIconUrl
                     }));
 
-                // Update workspace tabs to capture all live open tab changes before suspending
+                // Update workspace tabs to capture all live open tab changes before suspending (preserving saved tabs)
                 if (liveOpenTabs.length > 0) {
-                    ws.tabs = liveOpenTabs;
+                    const existingTabs = Array.isArray(ws.tabs) ? [...ws.tabs] : [];
+                    liveOpenTabs.forEach(liveTab => {
+                        const matchIndex = existingTabs.findIndex(t => isUrlMatch(t.url, liveTab.url));
+                        if (matchIndex >= 0) {
+                            if (liveTab.title && liveTab.title !== liveTab.url) {
+                                existingTabs[matchIndex].title = liveTab.title;
+                            }
+                            if (liveTab.favIconUrl) {
+                                existingTabs[matchIndex].favIconUrl = liveTab.favIconUrl;
+                            }
+                        } else {
+                            existingTabs.push(liveTab);
+                        }
+                    });
+                    ws.tabs = existingTabs;
                 }
 
                 const targetUrls = (ws.tabs || []).map(t => t.url).filter(Boolean);
@@ -559,7 +573,7 @@ const UI = {
                     <p style="color: #94A3B8; font-size: 12px; margin-bottom: 16px; line-height: 1.5;">
                         <strong>Unlimited AI Tab Categorization</strong> & <strong>Unlimited Cloud Workspace Sync</strong> are Pro Member features ($4.99/mo).
                     </p>
-                    <button onclick="window.open('https://tabflow-dashboard-eight.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #2563EB, #1D4ED8); color: #FFF; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+                    <button onclick="window.open('https://flowzone-dashboard.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #2563EB, #1D4ED8); color: #FFF; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px;">
                         Upgrade to Pro ($4.99/mo) ✨
                     </button>
                 </div>

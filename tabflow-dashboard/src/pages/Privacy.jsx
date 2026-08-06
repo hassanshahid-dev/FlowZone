@@ -13,7 +13,7 @@ export default function Privacy() {
           <TabFlowLogoSvg className="w-9 h-7 transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
-              TAB FLOW
+              FLOW ZONE
             </span>
             <span className="text-[8px] font-bold tracking-widest text-slate-400 uppercase">
               PRIVACY POLICY
@@ -50,7 +50,7 @@ export default function Privacy() {
               <h2>1. Our Privacy Commitment</h2>
             </div>
             <p className="text-slate-600">
-              At <strong>TabFlow Workspace Manager</strong>, we believe that your browsing history and research data belong entirely to you. We design our browser extension and web platform with a <strong>Privacy-First architecture</strong>. We do not track, sell, or rent your personal browsing telemetry or workspace data.
+              At <strong>FlowZone Workspace Manager</strong>, we believe that your browsing history and research data belong entirely to you. We design our browser extension and web platform with a <strong>Privacy-First architecture</strong>. We do not track, sell, or rent your personal browsing telemetry or workspace data.
             </p>
           </section>
 
@@ -58,7 +58,7 @@ export default function Privacy() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-black">2. Data We Collect and How We Use It</h2>
             <p>
-              TabFlow requires minimal permissions to provide workspace management, memory suspension, and AI tab categorization:
+              FlowZone requires minimal permissions to provide workspace management, memory suspension, and AI tab categorization:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-slate-600">
               <li>
@@ -85,7 +85,7 @@ export default function Privacy() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-black">4. Third-Party Services</h2>
             <p>
-              TabFlow integrates only with trusted, industry-compliant service providers:
+              FlowZone integrates only with trusted, industry-compliant service providers:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-slate-600">
               <li><strong>Vercel</strong>: Hosting for web app static assets.</li>
@@ -98,10 +98,10 @@ export default function Privacy() {
           <section className="space-y-3 pt-6 border-t border-slate-200">
             <h2 className="text-xl font-bold text-black">5. Your Data Control & Export Rights</h2>
             <p>
-              You can export or permanently delete your entire workspace history at any time using the 1-click **JSON Backup Export** feature inside the TabFlow side panel extension settings.
+              You can export or permanently delete your entire workspace history at any time using the 1-click **JSON Backup Export** feature inside the FlowZone side panel extension settings.
             </p>
             <p className="text-xs text-slate-500 pt-2">
-              If you have any questions regarding this Privacy Policy, please contact our team at <strong>privacy@tabflow.dev</strong>.
+              If you have any questions regarding this Privacy Policy, please contact our team at <strong>privacy@flowzone.dev</strong>.
             </p>
           </section>
 
@@ -116,12 +116,12 @@ export default function Privacy() {
             <div className="flex items-center gap-3">
               <TabFlowLogoSvg className="w-6 h-5" />
               <div className="flex flex-col">
-                <span className="font-bold text-black text-sm leading-none">TAB FLOW</span>
+                <span className="font-bold text-black text-sm leading-none">FLOW ZONE</span>
                 <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">WORKSPACE MANAGER</span>
               </div>
             </div>
             <p className="text-xs text-[#5F6368] max-w-md mt-2">
-              TabFlow provides workspace management, tab suspension, and memory acceleration for Chrome.
+              FlowZone provides workspace management, tab suspension, and memory acceleration for Chrome.
             </p>
           </div>
 
@@ -136,7 +136,7 @@ export default function Privacy() {
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[#5F6368]">
-          <div>© 2026 TabFlow Workspace Manager. All rights reserved.</div>
+          <div>© 2026 FlowZone Workspace Manager. All rights reserved.</div>
           <div className="flex gap-6 font-medium">
             <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="font-bold text-black border-b border-black pb-0.5">Privacy Policy</Link>
             <Link to="/terms" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Terms of Service</Link>

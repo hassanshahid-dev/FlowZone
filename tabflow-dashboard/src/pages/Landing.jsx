@@ -122,7 +122,7 @@ export default function Landing() {
             <TabFlowLogoSvg className="w-9 h-7 sm:w-10 sm:h-8 transition-transform group-hover:scale-105" />
             <div className="flex flex-col">
               <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-tight">
-                TAB FLOW
+                FLOW ZONE
               </span>
               <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-slate-400 uppercase">
                 WORKSPACE MANAGER
@@ -246,7 +246,7 @@ export default function Landing() {
             className="w-full sm:w-auto inline-flex items-center justify-center bg-black hover:bg-neutral-800 text-white font-medium text-base px-8 py-4 rounded-full transition shadow-md gap-3"
           >
             <ChromeIcon size={20} />
-            Try TabFlow Free
+            Try FlowZone Free
           </button>
           <button
             onClick={() => navigate('/login')}
@@ -298,7 +298,7 @@ export default function Landing() {
               RAM Saving
             </h2>
             <p className="text-base text-[#5F6368] font-normal leading-relaxed max-w-md">
-              Free up to 96% of Chrome memory instantly. TabFlow automatically suspends dormant background tabs without closing them or losing your place.
+              Free up to 96% of Chrome memory instantly. FlowZone automatically suspends dormant background tabs without closing them or losing your place.
             </p>
           </div>
 
@@ -363,7 +363,7 @@ export default function Landing() {
               Overheating Control
             </h2>
             <p className="text-base text-[#5F6368] font-normal leading-relaxed max-w-md">
-              Stop laptop fan noise and battery drain. TabFlow throttles heavy background tab scripts so your CPU stays cool and your laptop lasts hours longer.
+              Stop laptop fan noise and battery drain. FlowZone throttles heavy background tab scripts so your CPU stays cool and your laptop lasts hours longer.
             </p>
           </div>
 
@@ -381,12 +381,12 @@ export default function Landing() {
             {/* Temperature & CPU Gauge comparison */}
             <div className="grid grid-cols-2 gap-4 my-4">
               <div className="bg-neutral-900/90 border border-red-500/30 p-4 rounded-2xl text-left space-y-1">
-                <div className="text-[10px] text-red-400 font-mono font-bold uppercase">Before TabFlow</div>
+                <div className="text-[10px] text-red-400 font-mono font-bold uppercase">Before FlowZone</div>
                 <div className="text-2xl font-black font-mono text-red-500">85°C</div>
                 <div className="text-[11px] text-neutral-400">CPU Load: 88% • Loud Fan</div>
               </div>
               <div className="bg-neutral-900/90 border border-emerald-500/50 p-4 rounded-2xl text-left space-y-1">
-                <div className="text-[10px] text-emerald-400 font-mono font-bold uppercase">With TabFlow</div>
+                <div className="text-[10px] text-emerald-400 font-mono font-bold uppercase">With FlowZone</div>
                 <div className="text-2xl font-black font-mono text-emerald-400">42°C</div>
                 <div className="text-[11px] text-neutral-400">CPU Load: 6% • Silent Fan</div>
               </div>
@@ -588,20 +588,20 @@ export default function Landing() {
         <div className="space-y-4 text-left">
           {[
             {
-              q: "How does TabFlow suspend tabs without losing data?",
-              a: "TabFlow saves the precise URL, title, favicon, and tab position into your workspace state before instructing Chrome to close the tab. When you click Restore, TabFlow reopens the exact URL cleanly."
+              q: "How does FlowZone suspend tabs without losing data?",
+              a: "FlowZone saves the precise URL, title, favicon, and tab position into your workspace state before instructing Chrome to close the tab. When you click Restore, FlowZone reopens the exact URL cleanly."
             },
             {
-              q: "Does TabFlow require an internet connection or backend server?",
-              a: "No! TabFlow operates 100% offline using local browser storage and local rule AI engines. If online, it optionally connects to Google Gemini 1.5 Flash API for cloud AI tab summaries."
+              q: "Does FlowZone require an internet connection or backend server?",
+              a: "No! FlowZone operates 100% offline using local browser storage and local rule AI engines. If online, it optionally connects to Google Gemini 1.5 Flash API for cloud AI tab summaries."
             },
             {
-              q: "How do I open TabFlow as a Chrome Side Panel?",
-              a: "Once installed, click the TabFlow icon in your Chrome extensions toolbar. It will open directly inside Chrome's right sidebar (just like Apollo)."
+              q: "How do I open FlowZone as a Chrome Side Panel?",
+              a: "Once installed, click the FlowZone icon in your Chrome extensions toolbar. It will open directly inside Chrome's right sidebar (just like Apollo)."
             },
             {
               q: "Is my data private and secure?",
-              a: "Yes. TabFlow only stores tab titles and URLs for your saved workspaces locally. We never track your browsing history or sell user telemetry."
+              a: "Yes. FlowZone only stores tab titles and URLs for your saved workspaces locally. We never track your browsing history or sell user telemetry."
             }
           ].map((item, idx) => (
             <div
@@ -639,7 +639,7 @@ export default function Landing() {
             <div className="flex items-center gap-3 mb-4">
               <TabFlowLogoSvg className="w-10 h-8" />
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Install TabFlow Extension</h3>
+                <h3 className="text-lg font-bold text-slate-900">Install FlowZone Extension</h3>
                 <span className="text-xs text-slate-500">Chrome Web Store • Free Download</span>
               </div>
             </div>
@@ -679,12 +679,12 @@ export default function Landing() {
             <div className="flex items-center gap-3">
               <TabFlowLogoSvg className="w-6 h-5" />
               <div className="flex flex-col">
-                <span className="font-bold text-black text-sm leading-none">TAB FLOW</span>
+                <span className="font-bold text-black text-sm leading-none">FLOW ZONE</span>
                 <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">WORKSPACE MANAGER</span>
               </div>
             </div>
             <p className="text-xs text-[#5F6368] max-w-md mt-2">
-              TabFlow provides workspace management, tab suspension, and memory acceleration for Chrome.
+              FlowZone provides workspace management, tab suspension, and memory acceleration for Chrome.
             </p>
           </div>
 
@@ -700,7 +700,7 @@ export default function Landing() {
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[#5F6368]">
-          <div>© 2026 TabFlow Workspace Manager. All rights reserved.</div>
+          <div>© 2026 FlowZone Workspace Manager. All rights reserved.</div>
           <div className="flex gap-6 font-medium">
             <button onClick={() => { window.scrollTo(0, 0); navigate('/privacy'); }} className="hover:text-black transition">Privacy Policy</button>
             <button onClick={() => { window.scrollTo(0, 0); navigate('/terms'); }} className="hover:text-black transition">Terms of Service</button>

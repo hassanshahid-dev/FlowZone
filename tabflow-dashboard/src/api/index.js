@@ -1,4 +1,4 @@
-const BASE_URL = 'https://tabflow-backend-api.vercel.app/api';
+const BASE_URL = 'https://flowzone-backend-api.vercel.app/api';
 
 const api = axios.create({ baseURL: BASE_URL });
 

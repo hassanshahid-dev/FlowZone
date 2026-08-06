@@ -1,8 +1,8 @@
-# 🚀 TabFlow — Modern Chrome Tab & Workspace Manager
+# 🚀 FlowZone — Modern Chrome Tab & Workspace Manager
 
-![TabFlow Banner](https://raw.githubusercontent.com/hassanshahid-dev/Tab-Flow/main/tabExtension/icons/icon128.png)
+![FlowZone Banner](https://raw.githubusercontent.com/hassanshahid-dev/FlowZone/main/tabExtension/icons/icon128.png)
 
-> **TabFlow** is a powerful, high-performance Chrome Extension and Web Application built to reclaim computer RAM memory, organize hundreds of open browser tabs into custom workspaces, and seamlessly sync tabs in real time across all your desktop, mobile, and cloud devices.
+> **FlowZone** is a powerful, high-performance Chrome Extension and Web Application built to reclaim computer RAM memory, organize hundreds of open browser tabs into custom workspaces, and seamlessly sync tabs in real time across all your desktop, mobile, and cloud devices.
 
 ---
 
@@ -19,7 +19,7 @@
 - 🛡️ **Account & Safety Guards**:
   - Logout confirmation prompts on both the Extension Sidebar and Web Dashboard.
   - Automatic filtering out of empty pages, `chrome://newtab`, `about:blank`, and extension internal URLs.
-- 📱 **Cross-Device Web Dashboard**: Access and manage all your workspaces from any device, tablet, or smartphone at **[tabflow-dashboard-eight.vercel.app](https://tabflow-dashboard-eight.vercel.app)**.
+- 📱 **Cross-Device Web Dashboard**: Access and manage all your workspaces from any device, tablet, or smartphone at **[flowzone-dashboard.vercel.app](https://flowzone-dashboard.vercel.app)**.
 - 📂 **Backup & Portability**: 1-click JSON export and import for local backups.
 
 ---
@@ -29,7 +29,7 @@
 ### 📥 Option A: Load Unpacked Extension in Chrome (For Testers & Users)
 
 1. **Download the Extension**:
-   - Download the pre-packaged zip file: [`tabflow-extension-v1.0.0.zip`](./tabflow-extension-v1.0.0.zip) or clone this repository.
+   - Download the pre-packaged zip file: [`flowzone-extension-v1.0.0.zip`](./flowzone-extension-v1.0.0.zip) or clone this repository.
    - Extract/unzip the contents to a local folder on your computer.
 
 2. **Open Chrome Extensions Manager**:
@@ -43,17 +43,17 @@
    - Select the `tabExtension` directory inside the unzipped folder.
 
 5. 🎉 **Start Managing Tabs**:
-   - Press `Option + S` (macOS) or click the **TabFlow icon** in your Chrome toolbar to open the Extension Sidebar!
+   - Press `Option + S` (macOS) or click the **FlowZone icon** in your Chrome toolbar to open the Extension Sidebar!
 
 ---
 
-### 🌐 Option B: Accessing the Live Web Dashboard
+## 🌐 Option B: Accessing the Live Web Dashboard
 
 You can access your workspaces anytime from any web browser or mobile device:
 
-👉 **[https://tabflow-dashboard-eight.vercel.app](https://tabflow-dashboard-eight.vercel.app)**
+👉 **[https://flowzone-dashboard.vercel.app](https://flowzone-dashboard.vercel.app)**
 
-1. **Register / Log In**: Use your TabFlow credentials.
+1. **Register / Log In**: Use your FlowZone credentials.
 2. **View & Action Workspaces**:
    - Click **Restore** to launch a workspace's saved tabs in your browser.
    - Click **Suspend** to selectively close browser tabs and free RAM memory.
@@ -63,24 +63,24 @@ You can access your workspaces anytime from any web browser or mobile device:
 
 ## 🛠️ Developer Setup & Architecture
 
-TabFlow is built as a three-tier system:
+FlowZone is built as a three-tier system:
 
 ```
                   ┌──────────────────────────────┐
-                  │    TabFlow Chrome Extension  │
+                  │   FlowZone Chrome Extension  │
                   │   (Manifest V3 Background,   │
                   │     Content & Popup Sidebar) │
                   └──────────────┬───────────────┘
                                  │ Real-Time Sync & Events
                                  ▼
 ┌────────────────────────────────┴────────────────────────────────┐
-│                   TabFlow Express.js Backend API                 │
+│                  FlowZone Express.js Backend API                 │
 │              (JWT Auth, REST Endpoints, MongoDB Cloud)           │
 └────────────────────────────────┬────────────────────────────────┘
                                  │ REST API & postMessage Bridge
                                  ▼
                   ┌──────────────────────────────┐
-                  │   TabFlow React Dashboard    │
+                  │   FlowZone React Dashboard   │
                   │ (Vite, Tailwind, Vercel Host)│
                   └──────────────────────────────┘
 ```

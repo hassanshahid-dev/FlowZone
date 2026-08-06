@@ -12,7 +12,7 @@ function getTabs(callback) {
     } else {
         // Fallback for non-extension preview environment
         callback([
-            { id: 1, title: 'GitHub - TabFlow Repository', url: 'https://github.com', favIconUrl: 'https://www.google.com/s2/favicons?domain=github.com', active: true },
+            { id: 1, title: 'GitHub - FlowZone Repository', url: 'https://github.com', favIconUrl: 'https://www.google.com/s2/favicons?domain=github.com', active: true },
             { id: 2, title: 'React Documentation', url: 'https://react.dev', favIconUrl: 'https://www.google.com/s2/favicons?domain=react.dev', active: false },
             { id: 3, title: 'Stack Overflow', url: 'https://stackoverflow.com', favIconUrl: 'https://www.google.com/s2/favicons?domain=stackoverflow.com', active: false }
         ]);

@@ -13,7 +13,7 @@ export default function Terms() {
           <TabFlowLogoSvg className="w-9 h-7 transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
-              TAB FLOW
+              FLOW ZONE
             </span>
             <span className="text-[8px] font-bold tracking-widest text-slate-400 uppercase">
               TERMS OF SERVICE
@@ -50,7 +50,7 @@ export default function Terms() {
               <h2>1. Agreement to Terms</h2>
             </div>
             <p className="text-slate-600">
-              By installing the <strong>TabFlow Chrome Extension</strong> or creating an account on the <strong>TabFlow Web Dashboard</strong>, you agree to be bound by these Terms of Service. If you do not agree to these terms, please uninstall the extension and discontinue use of the service.
+              By installing the <strong>FlowZone Chrome Extension</strong> or creating an account on the <strong>FlowZone Web Dashboard</strong>, you agree to be bound by these Terms of Service. If you do not agree to these terms, please uninstall the extension and discontinue use of the service.
             </p>
           </section>
 
@@ -58,7 +58,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-black">2. Grant of License & Usage Rights</h2>
             <p>
-              TabFlow grants you a personal, non-exclusive, non-transferable license to use the TabFlow Chrome extension and web application for workspace tab management, RAM suspension, and AI tab categorization in accordance with your chosen plan:
+              FlowZone grants you a personal, non-exclusive, non-transferable license to use the FlowZone Chrome extension and web application for workspace tab management, RAM suspension, and AI tab categorization in accordance with your chosen plan:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-slate-600">
               <li><strong>Free Starter Plan</strong>: Free for personal use with unlimited local tab workspace saving and RAM suspension.</li>
@@ -78,7 +78,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-black">4. Limitation of Liability</h2>
             <p>
-              TabFlow provides workspace management and memory suspension features "as is". While TabFlow takes extensive measures to ensure tab URLs and session states are safely saved in local storage, TabFlow is not responsible for data loss resulting from unexpected browser crashes, device hardware failure, or third-party extension conflicts.
+              FlowZone provides workspace management and memory suspension features "as is". While FlowZone takes extensive measures to ensure tab URLs and session states are safely saved in local storage, FlowZone is not responsible for data loss resulting from unexpected browser crashes, device hardware failure, or third-party extension conflicts.
             </p>
           </section>
 
@@ -86,7 +86,7 @@ export default function Terms() {
           <section className="space-y-3 pt-6 border-t border-slate-200">
             <h2 className="text-xl font-bold text-black">5. Contact Information</h2>
             <p>
-              For any legal or service inquiry regarding these Terms of Service, please reach out to <strong>support@tabflow.dev</strong>.
+              For any legal or service inquiry regarding these Terms of Service, please reach out to <strong>support@flowzone.dev</strong>.
             </p>
           </section>
 
@@ -101,12 +101,12 @@ export default function Terms() {
             <div className="flex items-center gap-3">
               <TabFlowLogoSvg className="w-6 h-5" />
               <div className="flex flex-col">
-                <span className="font-bold text-black text-sm leading-none">TAB FLOW</span>
+                <span className="font-bold text-black text-sm leading-none">FLOW ZONE</span>
                 <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">WORKSPACE MANAGER</span>
               </div>
             </div>
             <p className="text-xs text-[#5F6368] max-w-md mt-2">
-              TabFlow provides workspace management, tab suspension, and memory acceleration for Chrome.
+              FlowZone provides workspace management, tab suspension, and memory acceleration for Chrome.
             </p>
           </div>
 
@@ -121,7 +121,7 @@ export default function Terms() {
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[#5F6368]">
-          <div>© 2026 TabFlow Workspace Manager. All rights reserved.</div>
+          <div>© 2026 FlowZone Workspace Manager. All rights reserved.</div>
           <div className="flex gap-6 font-medium">
             <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Privacy Policy</Link>
             <Link to="/terms" onClick={() => window.scrollTo(0, 0)} className="font-bold text-black border-b border-black pb-0.5">Terms of Service</Link>

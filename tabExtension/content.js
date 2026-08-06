@@ -1,5 +1,5 @@
-// content.js - Automatic Bidirectional Session & Workspace Sync for TabFlow
-(function syncTabFlowSession() {
+// content.js - Automatic Bidirectional Session & Workspace Sync for FlowZone
+(function syncFlowZoneSession() {
     function checkAndSync() {
         try {
             const webToken = localStorage.getItem('token');
@@ -13,6 +13,7 @@
                     if (extToken && !webToken) {
                         localStorage.setItem('token', extToken);
                         if (extData.user) localStorage.setItem('user', JSON.stringify(extData.user));
+                        window.postMessage({ type: 'FLOWZONE_SYNC_SESSION_DONE' }, '*');
                         window.postMessage({ type: 'TABFLOW_SYNC_SESSION_DONE' }, '*');
                     }
                     // 2. Sync Web session to Extension if Web has token but Extension does not
@@ -31,6 +32,7 @@
                         const newStr = JSON.stringify(extData.workSpaces);
                         if (currentLocal !== newStr) {
                             localStorage.setItem('workSpaces', newStr);
+                            window.postMessage({ type: 'FLOWZONE_SYNC_WORKSPACES' }, '*');
                             window.postMessage({ type: 'TABFLOW_SYNC_WORKSPACES' }, '*');
                         }
                     }
@@ -44,10 +46,10 @@
     window.addEventListener('message', (e) => {
         if (!e.data) return;
 
-        if (e.data.type === 'TABFLOW_ACTION_EVENT') {
+        if (e.data.type === 'FLOWZONE_ACTION_EVENT' || e.data.type === 'TABFLOW_ACTION_EVENT') {
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 chrome.runtime.sendMessage({
-                    type: 'TABFLOW_EXECUTE_ACTION',
+                    type: 'FLOWZONE_EXECUTE_ACTION',
                     action: e.data.action,
                     workspaceId: e.data.workspaceId,
                     data: e.data.data
@@ -55,8 +57,8 @@
             }
         }
 
-        if (e.data.type === 'TABFLOW_SYNC_SESSION' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
-            if (e.data.type === 'TABFLOW_LOGOUT_EVENT') {
+        if (e.data.type === 'FLOWZONE_SYNC_SESSION' || e.data.type === 'TABFLOW_SYNC_SESSION' || e.data.type === 'FLOWZONE_LOGOUT_EVENT' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
+            if (e.data.type === 'FLOWZONE_LOGOUT_EVENT' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {

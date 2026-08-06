@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 
-def draw_tabflow_logo(size):
+def draw_flowzone_logo(size):
     # Create RGBA canvas
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -28,6 +28,6 @@ def draw_tabflow_logo(size):
 
 sizes = [16, 48, 128]
 for s in sizes:
-    icon_img = draw_tabflow_logo(s)
+    icon_img = draw_flowzone_logo(s)
     icon_img.save(f"/Users/hassanshahid/Desktop/Projects/Browser API/tabExtension/icons/icon{s}.png")
     print(f"Created icon{s}.png successfully ({s}x{s})")

@@ -1,8 +1,8 @@
-// background.js - TabFlow Extension Background Service Worker (Manifest V3)
+// background.js - FlowZone Extension Background Service Worker (Manifest V3)
 
 // Configure side panel behavior on installation
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('TabFlow AI Workspace & Tab Manager Installed');
+    console.log('FlowZone AI Workspace & Tab Manager Installed');
 
     // Automatically open Chrome Side Panel when clicking toolbar action icon (Apollo-style)
     if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
@@ -14,8 +14,8 @@ chrome.runtime.onInstalled.addListener(() => {
     if (chrome.contextMenus) {
         chrome.contextMenus.removeAll(() => {
             chrome.contextMenus.create({
-                id: 'save-page-to-tabflow',
-                title: 'Save page to TabFlow Workspace',
+                id: 'save-page-to-flowzone',
+                title: 'Save page to FlowZone Workspace',
                 contexts: ['page']
             });
         });
@@ -33,7 +33,7 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Context Menu Action Listener
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === 'save-page-to-tabflow' && tab) {
+    if ((info.menuItemId === 'save-page-to-flowzone' || info.menuItemId === 'save-page-to-tabflow') && tab) {
         chrome.storage.local.get('workSpaces', (data) => {
             const workspaces = data.workSpaces || [];
             let quickWs = workspaces.find(ws => ws.name === 'Quick Saved Pages');
@@ -93,19 +93,44 @@ function autoSyncActiveWorkspace() {
 
                 if (liveTabsList.length === 0) return;
 
-                activeWs.tabs = liveTabsList;
+                // Retain existing tabs in active workspace and merge newly opened tabs
+                const existingTabs = Array.isArray(activeWs.tabs) ? [...activeWs.tabs] : [];
+
+                liveTabsList.forEach(liveTab => {
+                    const matchIndex = existingTabs.findIndex(t => isUrlMatch(t.url, liveTab.url));
+                    if (matchIndex >= 0) {
+                        if (liveTab.title && liveTab.title !== liveTab.url) {
+                            existingTabs[matchIndex].title = liveTab.title;
+                        }
+                        if (liveTab.favIconUrl) {
+                            existingTabs[matchIndex].favIconUrl = liveTab.favIconUrl;
+                        }
+                    } else {
+                        // New tab opened -> add to workspace
+                        existingTabs.push(liveTab);
+                    }
+                });
+
+                activeWs.tabs = existingTabs;
                 activeWs.updatedAt = new Date().toISOString();
 
                 chrome.storage.local.set({ workSpaces: workspaces }, () => {
                     if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
-                        fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
+                        fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${data.token}`
                             },
-                            body: JSON.stringify({ tabs: liveTabsList })
-                        }).catch(() => {});
+                            body: JSON.stringify({ tabs: existingTabs })
+                        }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${data.token}`
+                            },
+                            body: JSON.stringify({ tabs: existingTabs })
+                        })).catch(() => {});
                     }
                 });
             });
@@ -120,14 +145,13 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             autoSyncActiveWorkspace();
         }
     });
-    chrome.tabs.onRemoved.addListener(autoSyncActiveWorkspace);
 }
 
 // =========================================================================
 // REAL-TIME DASHBOARD ACTION EXECUTION BRIDGE
 // =========================================================================
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message && message.type === 'TABFLOW_EXECUTE_ACTION') {
+    if (message && (message.type === 'FLOWZONE_EXECUTE_ACTION' || message.type === 'TABFLOW_EXECUTE_ACTION')) {
         const { action, workspaceId, data } = message;
 
         chrome.storage.local.get(['workSpaces'], (storageData) => {

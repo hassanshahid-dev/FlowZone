@@ -43,13 +43,13 @@ const sendOtpEmail = async (toEmail, otpCode) => {
         });
 
         const mailOptions = {
-            from: '"TabFlow Verification" <iammuhammad3005@gmail.com>',
+            from: '"FlowZone Verification" <iammuhammad3005@gmail.com>',
             to: toEmail,
-            subject: `Your TabFlow Security OTP: ${otpCode}`,
+            subject: `Your FlowZone Security OTP: ${otpCode}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <h2 style="color: #0f172a; margin: 0; font-size: 22px;">TabFlow Email Verification</h2>
+                        <h2 style="color: #0f172a; margin: 0; font-size: 22px;">FlowZone Email Verification</h2>
                         <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Confirm email ownership to activate your account</p>
                     </div>
                     <p style="color: #334155; font-size: 14px; line-height: 1.5;">Hello,</p>

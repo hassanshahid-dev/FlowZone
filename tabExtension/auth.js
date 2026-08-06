@@ -1,4 +1,4 @@
-// auth.js - TabFlow Authentication & User Management
+// auth.js - FlowZone Authentication & User Management
 
 const Auth = {
     async getUser() {

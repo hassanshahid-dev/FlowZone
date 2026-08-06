@@ -1,4 +1,4 @@
-// popup.js - TabFlow Extension Master Initialization & Event Controller
+// popup.js - FlowZone Extension Master Initialization & Event Controller
 
 (async function () {
     let currentWorkspaces = [];
@@ -11,7 +11,7 @@
     async function autoSyncTokenFromDashboard() {
         return new Promise((resolve) => {
             if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query && chrome.scripting) {
-                chrome.tabs.query({ url: '*://tabflow-dashboard-eight.vercel.app/*' }, (tabs) => {
+                chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*', '*://tabflow-dashboard-eight.vercel.app/*'] }, (tabs) => {
                     if (tabs && tabs.length > 0) {
                         chrome.scripting.executeScript({
                             target: { tabId: tabs[0].id },
@@ -206,7 +206,7 @@
 
         // Open Web Dashboard Handlers
         const handleOpenDashboard = () => {
-            const url = 'https://tabflow-dashboard-eight.vercel.app/dashboard';
+            const url = 'https://flowzone-dashboard.vercel.app/dashboard';
             if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
                 chrome.tabs.create({ url });
             } else {
@@ -280,7 +280,7 @@
                 userDropdown.classList.remove('show');
                 const session = await Auth.getUser();
                 if (session && session.token) {
-                    if (!confirm("Are you sure you want to log out of your TabFlow account?")) {
+                    if (!confirm("Are you sure you want to log out of your FlowZone account?")) {
                         return;
                     }
                     await Auth.clearSession();
@@ -606,7 +606,7 @@
             const dataStr = await Storage.exportJSON();
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `tabflow_backup_${Date.now()}.json`);
+            downloadAnchor.setAttribute("download", `flowzone_backup_${Date.now()}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();

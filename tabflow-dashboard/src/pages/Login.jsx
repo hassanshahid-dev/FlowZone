@@ -138,7 +138,7 @@ export default function Login() {
           <TabFlowLogoSvg className="w-9 h-7 transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
-              TAB FLOW
+              FLOW ZONE
             </span>
             <span className="text-[8px] font-bold tracking-widest text-slate-400 uppercase">
               WORKSPACE MANAGER
@@ -308,7 +308,7 @@ export default function Login() {
 
       {/* Footer */}
       <footer className="py-6 border-t border-slate-100 text-center text-xs text-[#5F6368]">
-        © 2026 TabFlow Inc. All rights reserved.
+        © 2026 FlowZone Inc. All rights reserved.
       </footer>
 
     </div>

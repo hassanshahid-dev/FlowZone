@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "TabFlow - AI Workspace & Tab Manager",
+    "name": "FlowZone - AI Workspace & Tab Manager",
     "version": "1.0.0",
     "description": "Smart AI workspace manager, tab suspension, and RAM saver for Chrome.",
 
@@ -15,6 +15,8 @@
     ],
 
     "host_permissions": [
+        "https://flowzone-backend-api.vercel.app/*",
+        "https://flowzone-dashboard.vercel.app/*",
         "https://tabflow-backend-api.vercel.app/*",
         "https://tabflow-dashboard-eight.vercel.app/*"
     ],
@@ -26,6 +28,7 @@
     "content_scripts": [
         {
             "matches": [
+                "https://flowzone-dashboard.vercel.app/*",
                 "https://tabflow-dashboard-eight.vercel.app/*",
                 "http://localhost:5173/*"
             ],
@@ -39,7 +42,7 @@
     },
 
     "action": {
-        "default_title": "Open TabFlow Sidebar",
+        "default_title": "Open FlowZone Sidebar",
         "default_icon": {
             "16": "icons/icon16.png",
             "48": "icons/icon48.png",

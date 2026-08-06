@@ -8,7 +8,7 @@ export default function Upgrade() {
   const [paymentMethod, setPaymentMethod] = useState('lemonsqueezy'); // 'lemonsqueezy' | 'paddle' | 'card'
 
   // Lemon Squeezy / Paddle Global & Pakistan Payout Checkout URL
-  const LEMON_SQUEEZY_CHECKOUT_URL = "https://tabflow.lemonsqueezy.com/buy/tabflow-pro";
+  const LEMON_SQUEEZY_CHECKOUT_URL = "https://flowzone.lemonsqueezy.com/buy/flowzone-pro";
 
   const handleCheckout = () => {
     setLoading(true);
@@ -28,7 +28,7 @@ export default function Upgrade() {
           <TabFlowLogoSvg className="w-9 h-7 transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
-              TAB FLOW
+              FLOW ZONE
             </span>
             <span className="text-[8px] font-bold tracking-widest text-slate-400 uppercase">
               PRO MEMBERSHIP
@@ -58,7 +58,7 @@ export default function Upgrade() {
 
           <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-8">
             <div className="flex justify-between items-baseline mb-4">
-              <span className="text-sm font-bold text-slate-900">TabFlow Pro Annual Pass</span>
+              <span className="text-sm font-bold text-slate-900">FlowZone Pro Annual Pass</span>
               <div className="text-3xl font-extrabold text-black font-mono">
                 $4.99 <span className="text-xs font-normal text-slate-500">/ month</span>
               </div>
@@ -134,7 +134,7 @@ export default function Upgrade() {
 
       {/* Footer */}
       <footer className="py-6 border-t border-slate-100 text-center text-xs text-slate-400">
-        © 2026 TabFlow Pro • Lemon Squeezy & Paddle MoR Compliant
+        © 2026 FlowZone Pro • Lemon Squeezy & Paddle MoR Compliant
       </footer>
 
     </div>
