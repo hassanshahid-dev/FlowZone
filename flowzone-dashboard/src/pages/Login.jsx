@@ -94,7 +94,10 @@ export default function Login() {
 
       localStorage.setItem('token', data.token);
       if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-      try { window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: data.token, user: data.user }, '*'); } catch (e) {}
+      try {
+        window.postMessage({ type: 'FLOWZONE_SYNC_SESSION', token: data.token, user: data.user }, '*');
+        window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: data.token, user: data.user }, '*');
+      } catch (e) {}
       navigate('/dashboard');
 
     } catch (err) {

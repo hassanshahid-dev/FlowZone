@@ -111,7 +111,10 @@ export default function Register() {
           const fallbackUser = { email: email.trim(), name: name.trim() || 'User', plan: 'free' };
           localStorage.setItem('token', fallbackToken);
           localStorage.setItem('user', JSON.stringify(fallbackUser));
-          try { window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: fallbackToken, user: fallbackUser }, '*'); } catch (e) {}
+          try {
+            window.postMessage({ type: 'FLOWZONE_SYNC_SESSION', token: fallbackToken, user: fallbackUser }, '*');
+            window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: fallbackToken, user: fallbackUser }, '*');
+          } catch (e) {}
           navigate('/dashboard');
           return;
         }
@@ -122,7 +125,10 @@ export default function Register() {
 
       localStorage.setItem('token', data.token);
       if (data.user) localStorage.setItem('user', JSON.stringify({ ...data.user, name: name.trim() || data.user.name }));
-      try { window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: data.token, user: data.user }, '*'); } catch (e) {}
+      try {
+        window.postMessage({ type: 'FLOWZONE_SYNC_SESSION', token: data.token, user: data.user }, '*');
+        window.postMessage({ type: 'TABFLOW_SYNC_SESSION', token: data.token, user: data.user }, '*');
+      } catch (e) {}
       navigate('/dashboard');
 
     } catch (err) {

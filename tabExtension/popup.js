@@ -287,6 +287,22 @@
                     updateUserMenu({ token: null, user: null });
                     UI.showToast('Logged out of cloud account', 'info');
                     if (authOverlay) authOverlay.style.display = 'flex';
+
+                    // Broadcast logout to open dashboard web tabs
+                    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.scripting) {
+                        chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*', '*://tabflow-dashboard-eight.vercel.app/*'] }, (tabs) => {
+                            tabs.forEach(tab => {
+                                chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: () => {
+                                        localStorage.removeItem('token');
+                                        localStorage.removeItem('user');
+                                        window.postMessage({ type: 'FLOWZONE_LOGOUT_EVENT' }, '*');
+                                    }
+                                }).catch(() => {});
+                            });
+                        });
+                    }
                 } else {
                     if (authOverlay) authOverlay.style.display = 'flex';
                 }

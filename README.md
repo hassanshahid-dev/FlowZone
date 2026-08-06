@@ -29,7 +29,7 @@
 ### 📥 Option A: Load Unpacked Extension in Chrome (For Testers & Users)
 
 1. **Download the Extension**:
-   - Download the pre-packaged zip file: [`flowzone-extension-v1.2.0.zip`](./flowzone-extension-v1.2.0.zip) or clone this repository.
+   - Download the pre-packaged zip file: [`flowzone-extension-v1.2.1.zip`](./flowzone-extension-v1.2.1.zip) or clone this repository.
    - Extract/unzip the contents to a local folder on your computer.
 
 2. **Open Chrome Extensions Manager**:

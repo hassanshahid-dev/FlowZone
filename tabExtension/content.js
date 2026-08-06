@@ -9,21 +9,17 @@
                 chrome.storage.local.get(['token', 'user', 'workSpaces'], (extData) => {
                     const extToken = extData.token;
 
-                    // 1. Sync Extension session to Web Dashboard if Web has no token
+                    // 1. Sync Extension session to Web Dashboard if Extension is logged in but Web has no token
                     if (extToken && !webToken) {
                         localStorage.setItem('token', extToken);
                         if (extData.user) localStorage.setItem('user', JSON.stringify(extData.user));
                         window.postMessage({ type: 'FLOWZONE_SYNC_SESSION_DONE' }, '*');
                         window.postMessage({ type: 'TABFLOW_SYNC_SESSION_DONE' }, '*');
                     }
-                    // 2. Sync Web session to Extension if Web has token but Extension does not
+                    // 2. Sync Web session to Extension if Web is logged in but Extension has no token
                     else if (webToken && (!extToken || extToken !== webToken)) {
                         const webUser = webUserStr ? JSON.parse(webUserStr) : null;
                         chrome.storage.local.set({ token: webToken, user: webUser });
-                    }
-                    // 3. Logout sync: if Web logged out, remove Extension token
-                    else if (!webToken && extToken) {
-                        chrome.storage.local.remove(['token', 'user']);
                     }
 
                     // Sync local workspaces to Web localStorage & post message for real-time dashboard render
@@ -57,14 +53,16 @@
             }
         }
 
-        if (e.data.type === 'FLOWZONE_SYNC_SESSION' || e.data.type === 'TABFLOW_SYNC_SESSION' || e.data.type === 'FLOWZONE_LOGOUT_EVENT' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
-            if (e.data.type === 'FLOWZONE_LOGOUT_EVENT' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                    chrome.storage.local.remove(['token', 'user']);
-                }
+        if (e.data.type === 'FLOWZONE_LOGOUT_EVENT' || e.data.type === 'TABFLOW_LOGOUT_EVENT') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.remove(['token', 'user']);
             }
+            window.postMessage({ type: 'FLOWZONE_LOGOUT_DONE' }, '*');
+        }
+
+        if (e.data.type === 'FLOWZONE_SYNC_SESSION' || e.data.type === 'TABFLOW_SYNC_SESSION') {
             checkAndSync();
         }
     });
