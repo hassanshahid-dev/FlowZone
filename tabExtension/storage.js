@@ -95,9 +95,18 @@ const Storage = {
     async removeTabFromWorkspace(workspaceId, tabUrl) {
         const workspaces = await this.getWorkspaces();
         const target = workspaces.find(ws => (ws._id || ws.id) === workspaceId);
-        if (!target) return workspaces;
+        if (!target || !Array.isArray(target.tabs)) return workspaces;
 
-        const updatedTabs = target.tabs.filter(t => t.url !== tabUrl);
+        const updatedTabs = target.tabs.filter(t => {
+            if (t.url === tabUrl) return false;
+            try {
+                const u1 = new URL(t.url);
+                const u2 = new URL(tabUrl);
+                return !(u1.origin === u2.origin && u1.pathname === u2.pathname);
+            } catch {
+                return t.url !== tabUrl;
+            }
+        });
         return await this.updateWorkspace(workspaceId, { tabs: updatedTabs });
     },
 
