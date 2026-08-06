@@ -273,24 +273,32 @@ const UI = {
     },
 
     openSuspendModal(ws) {
-        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+        if (typeof chrome === 'undefined' || !chrome.windows || !chrome.windows.getCurrent) {
+            this.renderSuspendModalContent(ws);
+            return;
+        }
+
+        chrome.storage.local.get(['workSpaces'], (storageData) => {
+            const workspaces = storageData.workSpaces || [];
+            const freshWs = workspaces.find(w => (w._id || w.id) === (ws._id || ws.id)) || ws;
+
             chrome.windows.getCurrent((currentWin) => {
-                if (currentWin && ws.windowId && ws.windowId !== currentWin.id) {
+                const isDifferentWindow = currentWin && freshWs.isActive && freshWs.windowId && freshWs.windowId !== currentWin.id;
+
+                if (isDifferentWindow) {
                     const warnModal = document.getElementById('windowWarningModal');
                     const warnText = document.getElementById('windowWarningModalText');
                     if (warnModal && warnText) {
-                        warnText.textContent = `To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`;
+                        warnText.textContent = `To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`;
                         warnModal.style.display = 'flex';
                         return;
                     }
-                    this.showToast(`To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
+                    this.showToast(`To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
                     return;
                 }
-                this.renderSuspendModalContent(ws);
+                this.renderSuspendModalContent(freshWs);
             });
-        } else {
-            this.renderSuspendModalContent(ws);
-        }
+        });
     },
 
     renderSuspendModalContent(ws) {
