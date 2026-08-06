@@ -353,6 +353,12 @@ export default function Dashboard() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link
+            to="/"
+            className="text-xs text-slate-400 hover:text-white transition rounded-xl bg-slate-800/50 hover:bg-slate-800 px-3 py-2 font-medium"
+          >
+            Home Page
+          </Link>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
             <ShieldCheck size={14} /> Cloud Sync Active
           </div>
@@ -558,8 +564,12 @@ export default function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="px-8 py-4 text-center text-xs text-slate-600 border-t border-slate-900">
-        © 2026 FlowZone Cloud - Connected to Live Production Backend (https://tabflow-backend-api.vercel.app)
+      <footer className="px-8 py-5 text-center text-xs text-slate-500 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>© 2026 FlowZone Cloud. All rights reserved.</div>
+        <div className="flex items-center gap-5">
+          <Link to="/privacy" className="hover:text-white transition">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-white transition">Terms of Service</Link>
+        </div>
       </footer>
 
       {/* CREATE WORKSPACE MODAL */}

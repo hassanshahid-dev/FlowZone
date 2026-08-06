@@ -177,12 +177,21 @@ export default function Landing() {
               <button onClick={() => triggerToast('Follow @TabFlowApp on X')} className="hover:text-black transition" title="X"><XIcon /></button>
             </div>
 
-            <button
-              onClick={() => navigate('/login')}
-              className="text-sm font-semibold text-slate-700 hover:text-black transition"
-            >
-              Sign In
-            </button>
+            {localStorage.getItem('token') ? (
+              <Link
+                to="/dashboard"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="text-sm font-semibold text-slate-700 hover:text-black transition"
+              >
+                Sign In
+              </Link>
+            )}
             <button
               onClick={() => setShowInstallModal(true)}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
@@ -702,8 +711,8 @@ export default function Landing() {
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[#5F6368]">
           <div>© 2026 FlowZone Workspace Manager. All rights reserved.</div>
           <div className="flex gap-6 font-medium">
-            <button onClick={() => { window.scrollTo(0, 0); navigate('/privacy'); }} className="hover:text-black transition">Privacy Policy</button>
-            <button onClick={() => { window.scrollTo(0, 0); navigate('/terms'); }} className="hover:text-black transition">Terms of Service</button>
+            <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Privacy Policy</Link>
+            <Link to="/terms" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Terms of Service</Link>
             <button onClick={() => setShowInstallModal(true)} className="hover:text-black transition">Chrome Web Store</button>
           </div>
         </div>
