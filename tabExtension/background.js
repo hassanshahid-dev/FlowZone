@@ -212,6 +212,8 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
         const closedTab = tabCache.get(tabId);
         tabCache.delete(tabId);
 
+        if (!closedTab || !closedTab.url) return;
+
         chrome.storage.local.get(['workSpaces', 'token', 'pendingTabDeletions'], (data) => {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
@@ -222,27 +224,11 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
             // Search if closed tab was saved in active workspace
-            let matchedTab = null;
-            if (closedTab && closedTab.url) {
-                const normClosed = normalizeUrl(closedTab.url);
-                matchedTab = activeWs.tabs.find(t => normalizeUrl(t.url) === normClosed);
-            }
+            const normClosed = normalizeUrl(closedTab.url);
+            const matchedTab = activeWs.tabs.find(t => normalizeUrl(t.url) === normClosed);
 
-            if (!matchedTab) {
-                const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
-                chrome.tabs.query(queryFilter, (tabs) => {
-                    const liveUrls = new Set(
-                        (tabs || [])
-                            .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
-                            .map(t => normalizeUrl(t.url))
-                    );
-
-                    const missingTab = activeWs.tabs.find(t => !liveUrls.has(normalizeUrl(t.url)));
-                    if (missingTab) {
-                        triggerTabClosePrompt(activeWs, missingTab, data);
-                    }
-                });
-            } else {
+            // ONLY trigger confirmation prompt if the closed tab actually belonged to the workspace!
+            if (matchedTab) {
                 triggerTabClosePrompt(activeWs, matchedTab, data);
             }
         });
