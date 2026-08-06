@@ -101,11 +101,11 @@ FlowZone is built as a three-tier system:
   npm start
   ```
 
-### 3. Web Dashboard (`/tabflow-dashboard`)
+### 3. Web Dashboard (`/flowzone-dashboard`)
 - **Framework**: Vite + React 18 + Tailwind CSS + Lucide Icons.
 - **Run locally**:
   ```bash
-  cd tabflow-dashboard
+  cd flowzone-dashboard
   npm install
   npm run dev
   ```
