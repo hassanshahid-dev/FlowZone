@@ -79,7 +79,7 @@ function normalizeUrl(url) {
 
 let autoSyncDebounceTimer = null;
 
-function autoSyncActiveWorkspace() {
+function autoSyncActiveWorkspace(targetWindowId = null) {
     if (autoSyncDebounceTimer) clearTimeout(autoSyncDebounceTimer);
     autoSyncDebounceTimer = setTimeout(() => {
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local || !chrome.tabs) return;
@@ -91,10 +91,18 @@ function autoSyncActiveWorkspace() {
             const activeWorkspaces = workspaces.filter(ws => ws.isActive === true);
             if (activeWorkspaces.length === 0) return;
 
-            let hasChanges = false;
-            let pendingQueries = activeWorkspaces.length;
+            // Target strictly the workspace matching targetWindowId (if specified)
+            let targetWorkspaces = activeWorkspaces;
+            if (typeof targetWindowId === 'number') {
+                targetWorkspaces = activeWorkspaces.filter(ws => ws.windowId === targetWindowId || (!ws.windowId));
+            }
 
-            activeWorkspaces.forEach(activeWs => {
+            if (targetWorkspaces.length === 0) return;
+
+            let hasChanges = false;
+            let pendingQueries = targetWorkspaces.length;
+
+            targetWorkspaces.forEach(activeWs => {
                 const queryFilter = (typeof activeWs.windowId === 'number') ? { windowId: activeWs.windowId } : { currentWindow: true };
 
                 chrome.tabs.query(queryFilter, (tabs) => {
@@ -123,7 +131,7 @@ function autoSyncActiveWorkspace() {
                     if (pendingQueries === 0 && hasChanges) {
                         chrome.storage.local.set({ workSpaces: workspaces }, () => {
                             if (data.token) {
-                                activeWorkspaces.forEach(ws => {
+                                targetWorkspaces.forEach(ws => {
                                     if (ws._id && !ws._id.startsWith('local_')) {
                                         fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${ws._id}`, {
                                             method: 'PUT',
@@ -197,7 +205,7 @@ updateTabCache();
 if (typeof chrome !== 'undefined' && chrome.tabs) {
     chrome.tabs.onCreated.addListener((tab) => {
         if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
-        autoSyncActiveWorkspace();
+        if (tab.windowId) autoSyncActiveWorkspace(tab.windowId);
     });
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -205,7 +213,7 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
         }
         if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
-            autoSyncActiveWorkspace();
+            if (tab && tab.windowId) autoSyncActiveWorkspace(tab.windowId);
         }
     });
 
