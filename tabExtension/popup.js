@@ -677,6 +677,22 @@
             });
         }
 
+        // WINDOW WARNING MODAL LISTENERS
+        const windowWarningModal = document.getElementById('windowWarningModal');
+        const closeWindowWarningModalBtn = document.getElementById('closeWindowWarningModalBtn');
+        const confirmWindowWarningBtn = document.getElementById('confirmWindowWarningBtn');
+
+        if (closeWindowWarningModalBtn) {
+            closeWindowWarningModalBtn.addEventListener('click', () => {
+                if (windowWarningModal) windowWarningModal.style.display = 'none';
+            });
+        }
+        if (confirmWindowWarningBtn) {
+            confirmWindowWarningBtn.addEventListener('click', () => {
+                if (windowWarningModal) windowWarningModal.style.display = 'none';
+            });
+        }
+
         // =========================================================================
         // 4. OPEN TABS VIEW ACTIONS
         // =========================================================================

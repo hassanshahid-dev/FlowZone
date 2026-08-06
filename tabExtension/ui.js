@@ -275,7 +275,14 @@ const UI = {
     openSuspendModal(ws) {
         if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
             chrome.windows.getCurrent((currentWin) => {
-                if (currentWin && ws.windowId && ws.windowId !== currentWin.id) {
+                if (currentWin && ws.isActive && ws.windowId && ws.windowId !== currentWin.id) {
+                    const warnModal = document.getElementById('windowWarningModal');
+                    const warnText = document.getElementById('windowWarningModalText');
+                    if (warnModal && warnText) {
+                        warnText.textContent = `To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`;
+                        warnModal.style.display = 'flex';
+                        return;
+                    }
                     this.showToast(`To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
                     return;
                 }
