@@ -32,7 +32,7 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/login-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/login-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -74,7 +74,7 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/verify-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otpCode: otpInput.trim() })
@@ -112,7 +112,7 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/resend-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/resend-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

@@ -58,7 +58,7 @@ export default function Dashboard() {
     let cloudWs = [];
     if (token) {
       try {
-        const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
+        const res = await fetch('https://flowzone-backend-api.vercel.app/api/workspaces', {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => fetch('http://localhost:5000/api/workspaces', {
           headers: { Authorization: `Bearer ${token}` }
@@ -90,12 +90,24 @@ export default function Dashboard() {
       }
     } catch (e) { }
 
-    // Combine cloud and local workspaces seamlessly
-    const combined = [...cloudWs];
-    localWs.forEach(l => {
-      const exists = combined.some(c => c._id === l._id || c.name.toLowerCase().trim() === l.name.toLowerCase().trim());
-      if (!exists) combined.push(l);
+    // Combine cloud and local workspaces seamlessly, prioritizing local extension state
+    const combinedMap = new Map();
+    cloudWs.forEach(c => {
+      const key = (c._id || c.id || c.name || '').toLowerCase().trim();
+      combinedMap.set(key, c);
     });
+
+    localWs.forEach(l => {
+      const key = (l._id || l.id || l.name || '').toLowerCase().trim();
+      if (combinedMap.has(key)) {
+        const existing = combinedMap.get(key);
+        combinedMap.set(key, { ...existing, ...l });
+      } else {
+        combinedMap.set(key, l);
+      }
+    });
+
+    const combined = Array.from(combinedMap.values());
 
     setWorkspaces(combined);
     setLoading(false);
@@ -119,7 +131,7 @@ export default function Dashboard() {
     setCreating(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/workspaces', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/workspaces', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +180,7 @@ export default function Dashboard() {
     const token = localStorage.getItem('token');
     try {
       if (token && !renameWsId.startsWith('local_')) {
-        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${renameWsId}`, {
+        await fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${renameWsId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -208,7 +220,7 @@ export default function Dashboard() {
     const token = localStorage.getItem('token');
     try {
       if (token && id && !id.startsWith('local_')) {
-        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+        await fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => {});
@@ -251,7 +263,7 @@ export default function Dashboard() {
 
     try {
       if (token && id && !id.startsWith('local_')) {
-        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+        await fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -303,7 +315,7 @@ export default function Dashboard() {
     const token = localStorage.getItem('token');
     try {
       if (token && id && !id.startsWith('local_')) {
-        await fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${id}`, {
+        await fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

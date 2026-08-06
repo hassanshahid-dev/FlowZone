@@ -44,7 +44,7 @@ export default function Register() {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/register-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/register-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password })
@@ -92,7 +92,7 @@ export default function Register() {
     setError('');
 
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/verify-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), otpCode: otpInput.trim() })
@@ -149,7 +149,7 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('https://tabflow-backend-api.vercel.app/api/auth/resend-otp', {
+      const res = await fetch('https://flowzone-backend-api.vercel.app/api/auth/resend-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() })
