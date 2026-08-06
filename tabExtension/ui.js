@@ -273,7 +273,7 @@ const UI = {
     },
 
     openSuspendModal(ws) {
-        if (typeof chrome === 'undefined' || !chrome.windows || !chrome.windows.getCurrent) {
+        if (typeof chrome === 'undefined' || !chrome.windows || !chrome.tabs) {
             this.renderSuspendModalContent(ws);
             return;
         }
@@ -283,20 +283,28 @@ const UI = {
             const freshWs = workspaces.find(w => (w._id || w.id) === (ws._id || ws.id)) || ws;
 
             chrome.windows.getCurrent((currentWin) => {
-                const isDifferentWindow = currentWin && freshWs.isActive && freshWs.windowId && freshWs.windowId !== currentWin.id;
+                chrome.tabs.query({ currentWindow: true }, (currentTabs) => {
+                    const wsUrls = (freshWs.tabs || []).map(t => t.url).filter(Boolean);
+                    const isTabInCurrentWindow = (currentTabs || []).some(t => t.url && wsUrls.some(u => isUrlMatch(t.url, u)));
 
-                if (isDifferentWindow) {
-                    const warnModal = document.getElementById('windowWarningModal');
-                    const warnText = document.getElementById('windowWarningModalText');
-                    if (warnModal && warnText) {
-                        warnText.textContent = `To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`;
-                        warnModal.style.display = 'flex';
+                    const isWindowIdMismatch = !!(currentWin && freshWs.windowId && freshWs.windowId !== currentWin.id);
+                    const isActiveInOtherWindow = !!(freshWs.isActive && !isTabInCurrentWindow);
+
+                    const isDifferentWindow = isWindowIdMismatch || isActiveInOtherWindow;
+
+                    if (isDifferentWindow) {
+                        const warnModal = document.getElementById('windowWarningModal');
+                        const warnText = document.getElementById('windowWarningModalText');
+                        if (warnModal && warnText) {
+                            warnText.textContent = `To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`;
+                            warnModal.style.display = 'flex';
+                            return;
+                        }
+                        this.showToast(`To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
                         return;
                     }
-                    this.showToast(`To suspend "${freshWs.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
-                    return;
-                }
-                this.renderSuspendModalContent(freshWs);
+                    this.renderSuspendModalContent(freshWs);
+                });
             });
         });
     },
@@ -387,6 +395,21 @@ const UI = {
 
     async suspendWorkspace(ws) {
         const id = ws._id || ws.id;
+
+        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.getCurrent) {
+            const currentWin = await new Promise(resolve => chrome.windows.getCurrent(resolve));
+            if (currentWin && ws.windowId && ws.windowId !== currentWin.id) {
+                const warnModal = document.getElementById('windowWarningModal');
+                const warnText = document.getElementById('windowWarningModalText');
+                if (warnModal && warnText) {
+                    warnText.textContent = `To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`;
+                    warnModal.style.display = 'flex';
+                    return;
+                }
+                this.showToast(`To suspend "${ws.name}", please navigate to its dedicated Chrome window and suspend it there.`, 'warning');
+                return;
+            }
+        }
 
         if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
             chrome.tabs.query({ currentWindow: true }, async (currentTabs) => {
