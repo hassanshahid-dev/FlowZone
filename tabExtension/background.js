@@ -152,66 +152,181 @@ function autoSyncActiveWorkspace() {
     }, 300);
 }
 
+const tabCache = new Map();
+
+function updateTabCache() {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+    chrome.tabs.query({}, (tabs) => {
+        if (!tabs) return;
+        tabs.forEach(t => {
+            if (t.id && t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank') {
+                tabCache.set(t.id, { title: t.title || t.url, url: t.url });
+            }
+        });
+    });
+}
+
+updateTabCache();
+
 if (typeof chrome !== 'undefined' && chrome.tabs) {
-    chrome.tabs.onCreated.addListener(autoSyncActiveWorkspace);
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    chrome.tabs.onCreated.addListener((tab) => {
+        if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url });
+        autoSyncActiveWorkspace();
+    });
+
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+        if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && tab.url !== 'about:blank') {
+            tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url });
+        }
         if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
             autoSyncActiveWorkspace();
         }
     });
 
-    chrome.tabs.onRemoved.addListener(() => {
+    chrome.tabs.onRemoved.addListener((tabId) => {
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local || !chrome.tabs) return;
 
-        chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+        const closedTab = tabCache.get(tabId);
+        tabCache.delete(tabId);
+
+        chrome.storage.local.get(['workSpaces', 'token', 'pendingTabDeletions'], (data) => {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
             const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
-            chrome.tabs.query({}, (tabs) => {
-                const liveUrls = new Set(
-                    (tabs || [])
-                        .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
-                        .map(t => normalizeUrl(t.url))
-                );
+            // Search if closed tab was saved in active workspace
+            let matchedTab = null;
+            if (closedTab && closedTab.url) {
+                const normClosed = normalizeUrl(closedTab.url);
+                matchedTab = activeWs.tabs.find(t => normalizeUrl(t.url) === normClosed);
+            }
 
-                const originalCount = activeWs.tabs.length;
-                activeWs.tabs = activeWs.tabs.filter(t => liveUrls.has(normalizeUrl(t.url)));
+            if (!matchedTab) {
+                chrome.tabs.query({}, (tabs) => {
+                    const liveUrls = new Set(
+                        (tabs || [])
+                            .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
+                            .map(t => normalizeUrl(t.url))
+                    );
 
-                if (activeWs.tabs.length !== originalCount) {
-                    activeWs.updatedAt = new Date().toISOString();
-
-                    chrome.storage.local.set({ workSpaces: workspaces }, () => {
-                        if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
-                            fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${data.token}`
-                                },
-                                body: JSON.stringify({ tabs: activeWs.tabs })
-                            }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${data.token}`
-                                },
-                                body: JSON.stringify({ tabs: activeWs.tabs })
-                            })).catch(() => {});
-                        }
-
-                        chrome.action.setBadgeText({ text: '✓' });
-                        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-                        setTimeout(() => chrome.action.setBadgeText({ text: '' }), 1500);
-                    });
-                }
-            });
+                    const missingTab = activeWs.tabs.find(t => !liveUrls.has(normalizeUrl(t.url)));
+                    if (missingTab) {
+                        triggerTabClosePrompt(activeWs, missingTab, data);
+                    }
+                });
+            } else {
+                triggerTabClosePrompt(activeWs, matchedTab, data);
+            }
         });
     });
 
     chrome.tabs.onReplaced.addListener(autoSyncActiveWorkspace);
+}
+
+function triggerTabClosePrompt(activeWs, targetTab, data) {
+    const promptId = `prompt_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const pendingList = data.pendingTabDeletions || {};
+    pendingList[promptId] = {
+        workspaceId: activeWs._id || activeWs.id,
+        wsName: activeWs.name,
+        tabUrl: targetTab.url,
+        tabTitle: targetTab.title || targetTab.url,
+        createdAt: Date.now()
+    };
+
+    chrome.storage.local.set({ pendingTabDeletions: pendingList }, () => {
+        // 1. Issue Chrome Notification with Prompt Buttons
+        const iconPath = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+            ? chrome.runtime.getURL('icons/icon128.png')
+            : 'icons/icon128.png';
+
+        if (chrome.notifications && chrome.notifications.create) {
+            chrome.notifications.create(promptId, {
+                type: 'basic',
+                iconUrl: iconPath,
+                title: `FlowZone: ${activeWs.name}`,
+                message: `Closed tab "${targetTab.title || targetTab.url}". Delete this tab from "${activeWs.name}" workspace?`,
+                buttons: [
+                    { title: 'Yes, Delete from Workspace' },
+                    { title: 'Keep in Workspace' }
+                ],
+                priority: 2,
+                requireInteraction: true
+            });
+        }
+
+        // 2. Broadcast Runtime Message to open Sidebar UI
+        if (chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+                type: 'FLOWZONE_TAB_CLOSED_PROMPT',
+                promptId,
+                wsName: activeWs.name,
+                tabTitle: targetTab.title || targetTab.url,
+                tabUrl: targetTab.url
+            }).catch(() => {});
+        }
+
+        // 3. Set Action Badge Alert
+        chrome.action.setBadgeText({ text: 'DEL?' });
+        chrome.action.setBadgeBackgroundColor({ color: '#F59E0B' });
+    });
+}
+
+function executeTabDeletionFromWorkspace(promptId, shouldDelete) {
+    chrome.storage.local.get(['workSpaces', 'token', 'pendingTabDeletions'], (data) => {
+        const pendingList = data.pendingTabDeletions || {};
+        const pending = pendingList[promptId];
+        delete pendingList[promptId];
+
+        chrome.storage.local.set({ pendingTabDeletions: pendingList });
+        if (chrome.notifications && chrome.notifications.clear) {
+            chrome.notifications.clear(promptId);
+        }
+
+        if (!pending || !shouldDelete) {
+            chrome.action.setBadgeText({ text: '' });
+            return;
+        }
+
+        const workspaces = data.workSpaces || [];
+        const targetWs = workspaces.find(ws => (ws._id || ws.id) === pending.workspaceId || ws.name === pending.wsName);
+
+        if (targetWs && Array.isArray(targetWs.tabs)) {
+            const normPending = normalizeUrl(pending.tabUrl);
+            targetWs.tabs = targetWs.tabs.filter(t => normalizeUrl(t.url) !== normPending);
+            targetWs.updatedAt = new Date().toISOString();
+
+            chrome.storage.local.set({ workSpaces: workspaces }, () => {
+                if (data.token && targetWs._id && !targetWs._id.startsWith('local_')) {
+                    fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${targetWs._id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${data.token}`
+                        },
+                        body: JSON.stringify({ tabs: targetWs.tabs })
+                    }).catch(() => {});
+                }
+
+                chrome.action.setBadgeText({ text: '✓' });
+                chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+                setTimeout(() => chrome.action.setBadgeText({ text: '' }), 1500);
+            });
+        }
+    });
+}
+
+// Attach Notification Event Handlers
+if (typeof chrome !== 'undefined' && chrome.notifications) {
+    chrome.notifications.onButtonClicked.addListener((promptId, buttonIndex) => {
+        executeTabDeletionFromWorkspace(promptId, buttonIndex === 0);
+    });
+
+    chrome.notifications.onClicked.addListener((promptId) => {
+        executeTabDeletionFromWorkspace(promptId, true);
+    });
 }
 
 // =========================================================================

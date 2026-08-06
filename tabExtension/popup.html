@@ -127,6 +127,16 @@
                 </button>
             </nav>
 
+            <!-- TAB CLOSE CONFIRMATION BANNER -->
+            <div id="tabClosePromptBanner" style="display:none; background:#FFFBEB; border:1px solid #F59E0B; border-radius:14px; padding:12px 14px; margin: 12px 16px 4px 16px; box-shadow:0 4px 12px rgba(245,158,11,0.15);">
+                <div style="font-size:12px; font-weight:700; color:#92400E; margin-bottom:4px;" id="promptBannerTitle">Delete Tab from Workspace?</div>
+                <div style="font-size:11px; color:#B45309; margin-bottom:10px; line-height:1.4;" id="promptBannerText">Closed tab. Delete from workspace?</div>
+                <div style="display:flex; gap:8px;">
+                    <button id="promptConfirmYesBtn" style="background:#EF4444; color:white; border:none; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:600; cursor:pointer;">Yes, Delete</button>
+                    <button id="promptConfirmNoBtn" style="background:#E5E7EB; color:#374151; border:none; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:600; cursor:pointer;">Keep in Workspace</button>
+                </div>
+            </div>
+
             <!-- Search & Controls Bar -->
             <div class="controls-bar" id="searchControlsBar">
                 <div class="search-box">
