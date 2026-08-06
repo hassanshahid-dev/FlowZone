@@ -14,7 +14,7 @@ const generateToken = (user) => {
             id: user._id,
             email: user.email
         },
-        process.env.JWT_SECRET || 'tabflow_jwt_secret',
+        process.env.JWT_SECRET || 'flowzone_jwt_secret',
         { expiresIn: '30d' }
     );
 };

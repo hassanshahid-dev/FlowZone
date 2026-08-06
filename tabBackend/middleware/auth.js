@@ -10,7 +10,7 @@ export const protect = (req, res, next) => {
     const token = authHeader.split(` `)[1];
 
     try {
-        const secret = process.env.JWT_SECRET || 'tabflow_jwt_secret';
+        const secret = process.env.JWT_SECRET || 'flowzone_jwt_secret';
         const decoded = jwt.verify(token, secret);
         req.user = decoded;
         next();
