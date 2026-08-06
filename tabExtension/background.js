@@ -81,7 +81,7 @@ function autoSyncActiveWorkspace() {
             if (!activeWs) return;
 
             chrome.tabs.query({ currentWindow: true }, (tabs) => {
-                if (!tabs || tabs.length === 0) return;
+                if (!tabs) return;
 
                 const liveTabsList = tabs
                     .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
@@ -91,27 +91,8 @@ function autoSyncActiveWorkspace() {
                         favIconUrl: t.favIconUrl
                     }));
 
-                if (liveTabsList.length === 0) return;
-
-                // Retain existing tabs in active workspace and merge newly opened tabs
-                const existingTabs = Array.isArray(activeWs.tabs) ? [...activeWs.tabs] : [];
-
-                liveTabsList.forEach(liveTab => {
-                    const matchIndex = existingTabs.findIndex(t => isUrlMatch(t.url, liveTab.url));
-                    if (matchIndex >= 0) {
-                        if (liveTab.title && liveTab.title !== liveTab.url) {
-                            existingTabs[matchIndex].title = liveTab.title;
-                        }
-                        if (liveTab.favIconUrl) {
-                            existingTabs[matchIndex].favIconUrl = liveTab.favIconUrl;
-                        }
-                    } else {
-                        // New tab opened -> add to workspace
-                        existingTabs.push(liveTab);
-                    }
-                });
-
-                activeWs.tabs = existingTabs;
+                // Update active workspace tabs to mirror live user browser activity
+                activeWs.tabs = liveTabsList;
                 activeWs.updatedAt = new Date().toISOString();
 
                 chrome.storage.local.set({ workSpaces: workspaces }, () => {
@@ -122,28 +103,134 @@ function autoSyncActiveWorkspace() {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${data.token}`
                             },
-                            body: JSON.stringify({ tabs: existingTabs })
+                            body: JSON.stringify({ tabs: liveTabsList })
                         }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${data.token}`
                             },
-                            body: JSON.stringify({ tabs: existingTabs })
+                            body: JSON.stringify({ tabs: liveTabsList })
                         })).catch(() => {});
                     }
                 });
             });
         });
-    }, 1500);
+    }, 800);
 }
 
+// Tab Cache & Pending Deletion Confirmation Map
+const tabCache = new Map();
+const pendingTabDeletions = new Map();
+
+function updateTabCache() {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+    chrome.tabs.query({}, (tabs) => {
+        if (!tabs) return;
+        tabs.forEach(t => {
+            if (t.id && t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank') {
+                tabCache.set(t.id, { title: t.title || t.url, url: t.url });
+            }
+        });
+    });
+}
+
+updateTabCache();
+
 if (typeof chrome !== 'undefined' && chrome.tabs) {
-    chrome.tabs.onCreated.addListener(autoSyncActiveWorkspace);
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-        if (changeInfo.url || changeInfo.title) {
+    chrome.tabs.onCreated.addListener((tab) => {
+        if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url });
+        autoSyncActiveWorkspace();
+    });
+
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+        if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && tab.url !== 'about:blank') {
+            tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url });
+        }
+        if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
             autoSyncActiveWorkspace();
         }
+    });
+
+    chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+        const closedTab = tabCache.get(tabId);
+        tabCache.delete(tabId);
+
+        if (closedTab && closedTab.url) {
+            chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+                const workspaces = data.workSpaces || [];
+                const activeWs = workspaces.find(ws => ws.isActive);
+
+                if (activeWs && Array.isArray(activeWs.tabs)) {
+                    const matchedTab = activeWs.tabs.find(t => isUrlMatch(t.url, closedTab.url));
+
+                    if (matchedTab) {
+                        const notifId = `delete_tab_ws_${Date.now()}_${tabId}`;
+                        pendingTabDeletions.set(notifId, {
+                            workspaceId: activeWs._id || activeWs.id,
+                            tabUrl: matchedTab.url,
+                            tabTitle: matchedTab.title || closedTab.title,
+                            wsName: activeWs.name
+                        });
+
+                        if (chrome.notifications && chrome.notifications.create) {
+                            chrome.notifications.create(notifId, {
+                                type: 'basic',
+                                iconUrl: 'icons/icon128.png',
+                                title: `FlowZone: ${activeWs.name}`,
+                                message: `Closed tab "${matchedTab.title || closedTab.title}". Delete this tab from "${activeWs.name}" workspace?`,
+                                buttons: [
+                                    { title: 'Yes, Delete from Workspace' },
+                                    { title: 'Keep in Workspace' }
+                                ],
+                                priority: 2
+                            });
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    chrome.tabs.onReplaced.addListener(autoSyncActiveWorkspace);
+}
+
+// Notification Button Confirmation Handler for Workspace Tab Deletion
+if (typeof chrome !== 'undefined' && chrome.notifications) {
+    chrome.notifications.onButtonClicked.addListener((notifId, buttonIndex) => {
+        const pending = pendingTabDeletions.get(notifId);
+        if (!pending) return;
+
+        if (buttonIndex === 0) {
+            // User selected: "Yes, Delete from Workspace"
+            chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+                const workspaces = data.workSpaces || [];
+                const targetWs = workspaces.find(ws => (ws._id || ws.id) === pending.workspaceId || ws.name === pending.wsName);
+
+                if (targetWs && Array.isArray(targetWs.tabs)) {
+                    targetWs.tabs = targetWs.tabs.filter(t => !isUrlMatch(t.url, pending.tabUrl));
+                    targetWs.updatedAt = new Date().toISOString();
+
+                    chrome.storage.local.set({ workSpaces: workspaces }, () => {
+                        if (data.token && targetWs._id && !targetWs._id.startsWith('local_')) {
+                            fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${targetWs._id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${data.token}`
+                                },
+                                body: JSON.stringify({ tabs: targetWs.tabs })
+                            }).catch(() => {});
+                        }
+                        chrome.action.setBadgeText({ text: '✓' });
+                        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+                        setTimeout(() => chrome.action.setBadgeText({ text: '' }), 2000);
+                    });
+                }
+            });
+        }
+        pendingTabDeletions.delete(notifId);
+        chrome.notifications.clear(notifId);
     });
 }
 
