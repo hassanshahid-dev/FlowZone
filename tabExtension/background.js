@@ -220,7 +220,9 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
 
             // Target strictly active workspace bound to the window where the tab was closed
             const closedWinId = removeInfo?.windowId;
-            const activeWs = workspaces.find(ws => ws.isActive === true && (!closedWinId || ws.windowId === closedWinId));
+            if (typeof closedWinId !== 'number') return;
+
+            const activeWs = workspaces.find(ws => ws.isActive === true && typeof ws.windowId === 'number' && ws.windowId === closedWinId);
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
             // Search if closed tab was saved in active workspace
