@@ -430,24 +430,26 @@ export default function Dashboard() {
               {(() => {
                 let totalMb = 0;
                 workspaces.forEach(ws => {
-                  (ws.tabs || []).forEach(t => {
-                    if (t.memoryMb && typeof t.memoryMb === 'number') {
-                      totalMb += t.memoryMb;
-                    } else if (t.url) {
-                      const u = t.url.toLowerCase();
-                      if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) totalMb += 380;
-                      else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) totalMb += 290;
-                      else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) totalMb += 210;
-                      else totalMb += 120;
-                    } else {
-                      totalMb += 120;
-                    }
-                  });
+                  if (ws.isActive === false) {
+                    (ws.tabs || []).forEach(t => {
+                      if (t.memoryMb && typeof t.memoryMb === 'number') {
+                        totalMb += t.memoryMb;
+                      } else if (t.url) {
+                        const u = t.url.toLowerCase();
+                        if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) totalMb += 380;
+                        else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) totalMb += 290;
+                        else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) totalMb += 210;
+                        else totalMb += 120;
+                      } else {
+                        totalMb += 120;
+                      }
+                    });
+                  }
                 });
                 return totalMb >= 1024 ? (totalMb / 1024).toFixed(2) + ' GB' : totalMb + ' MB';
               })()}
             </div>
-            <span className="text-[10px] text-emerald-500/80 mt-1 block">Exact process memory calculated</span>
+            <span className="text-[10px] text-emerald-500/80 mt-1 block">Reclaimed from suspended workspaces</span>
           </div>
         </div>
 
