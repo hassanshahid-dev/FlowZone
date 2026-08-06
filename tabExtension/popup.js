@@ -175,6 +175,40 @@
             });
         });
 
+        // Real-time Storage & Tab Event Listeners for Instant UI Sync
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+            chrome.storage.onChanged.addListener((changes, areaName) => {
+                if (areaName === 'local' && changes.workSpaces) {
+                    currentWorkspaces = changes.workSpaces.newValue || [];
+                    const activeNav = document.querySelector('.nav-tab.active')?.dataset.tab;
+                    if (activeNav === 'workspaces' || !activeNav) {
+                        UI.displayWorkspaces(currentWorkspaces, getFilterValue(), getSearchValue());
+                    }
+                }
+            });
+        }
+
+        if (typeof chrome !== 'undefined' && chrome.tabs) {
+            const refreshLiveViews = () => {
+                const activeNav = document.querySelector('.nav-tab.active')?.dataset.tab;
+                if (activeNav === 'openTabs') {
+                    getTabs(tabs => {
+                        currentOpenTabs = tabs;
+                        UI.renderOpenTabs(tabs, getSearchValue());
+                    });
+                }
+            };
+            try {
+                chrome.tabs.onCreated.addListener(refreshLiveViews);
+                chrome.tabs.onRemoved.addListener(refreshLiveViews);
+                chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+                    if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
+                        refreshLiveViews();
+                    }
+                });
+            } catch (e) {}
+        }
+
         // Search Input Filter
         const searchInput = document.getElementById('searchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');

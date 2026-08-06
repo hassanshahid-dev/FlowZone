@@ -67,5 +67,9 @@
         }
     });
 
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener(checkAndSync);
+    }
+
     setInterval(checkAndSync, 1000);
 })();
