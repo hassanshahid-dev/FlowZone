@@ -88,18 +88,21 @@ function autoSyncActiveWorkspace() {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            const activeWorkspaces = workspaces.filter(ws => ws.isActive === true && typeof ws.windowId === 'number');
+            const activeWorkspaces = workspaces.filter(ws => ws.isActive === true);
             if (activeWorkspaces.length === 0) return;
 
             let hasChanges = false;
             let pendingQueries = activeWorkspaces.length;
 
             activeWorkspaces.forEach(activeWs => {
-                chrome.tabs.query({ windowId: activeWs.windowId }, (tabs) => {
+                const queryFilter = (typeof activeWs.windowId === 'number') ? { windowId: activeWs.windowId } : { currentWindow: true };
+
+                chrome.tabs.query(queryFilter, (tabs) => {
                     pendingQueries--;
                     if (tabs && tabs.length > 0) {
-                        if (tabs[0].windowId && !activeWs.windowId) {
+                        if (tabs[0].windowId && typeof activeWs.windowId !== 'number') {
                             activeWs.windowId = tabs[0].windowId;
+                            hasChanges = true;
                         }
 
                         const liveTabsList = tabs
@@ -128,7 +131,7 @@ function autoSyncActiveWorkspace() {
                                                 'Content-Type': 'application/json',
                                                 'Authorization': `Bearer ${data.token}`
                                             },
-                                            body: JSON.stringify({ tabs: ws.tabs })
+                                            body: JSON.stringify({ tabs: ws.tabs, windowId: ws.windowId })
                                         }).catch(() => {});
                                     }
                                 });
@@ -183,7 +186,7 @@ function updateTabCache() {
         if (!tabs) return;
         tabs.forEach(t => {
             if (t.id && t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank') {
-                tabCache.set(t.id, { title: t.title || t.url, url: t.url });
+                tabCache.set(t.id, { title: t.title || t.url, url: t.url, windowId: t.windowId });
             }
         });
     });
@@ -193,13 +196,13 @@ updateTabCache();
 
 if (typeof chrome !== 'undefined' && chrome.tabs) {
     chrome.tabs.onCreated.addListener((tab) => {
-        if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url });
+        if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
         autoSyncActiveWorkspace();
     });
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && tab.url !== 'about:blank') {
-            tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url });
+            tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url, windowId: tab.windowId });
         }
         if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
             autoSyncActiveWorkspace();
@@ -214,14 +217,14 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
 
         if (!closedTab || !closedTab.url) return;
 
+        const closedWinId = closedTab.windowId || removeInfo?.windowId;
+        if (typeof closedWinId !== 'number') return;
+
         chrome.storage.local.get(['workSpaces', 'token', 'pendingTabDeletions'], (data) => {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
             // Target strictly active workspace bound to the window where the tab was closed
-            const closedWinId = removeInfo?.windowId;
-            if (typeof closedWinId !== 'number') return;
-
             const activeWs = workspaces.find(ws => ws.isActive === true && typeof ws.windowId === 'number' && ws.windowId === closedWinId);
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
@@ -229,7 +232,7 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             const normClosed = normalizeUrl(closedTab.url);
             const matchedTab = activeWs.tabs.find(t => normalizeUrl(t.url) === normClosed);
 
-            // ONLY trigger confirmation prompt if the closed tab actually belonged to the workspace!
+            // ONLY trigger confirmation prompt if the closed tab actually belonged to the workspace in THIS exact window!
             if (matchedTab) {
                 triggerTabClosePrompt(activeWs, matchedTab, data);
             }
