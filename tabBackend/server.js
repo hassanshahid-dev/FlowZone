@@ -9,7 +9,18 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// Explicit CORS Headers for Chrome Extensions and Web Dashboard
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 
 // Serverless-aware MongoDB Connection Middleware with Promise Caching & Cloud Fallback
