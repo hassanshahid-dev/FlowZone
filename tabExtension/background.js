@@ -208,7 +208,7 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
         }
     });
 
-    chrome.tabs.onRemoved.addListener((tabId) => {
+    chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local || !chrome.tabs) return;
 
         const closedTab = tabCache.get(tabId);
@@ -218,8 +218,9 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             const workspaces = data.workSpaces || [];
             if (workspaces.length === 0) return;
 
-            // Target strictly active workspace; stop tab removal prompt if suspended or closed
-            const activeWs = workspaces.find(ws => ws.isActive === true);
+            // Target strictly active workspace bound to the window where the tab was closed
+            const closedWinId = removeInfo?.windowId;
+            const activeWs = workspaces.find(ws => ws.isActive === true && (!closedWinId || ws.windowId === closedWinId));
             if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
             // Search if closed tab was saved in active workspace
