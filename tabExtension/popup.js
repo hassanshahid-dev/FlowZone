@@ -647,6 +647,32 @@
                     UI.showToast(`Suspended workspace${urlsToDelete.length > 0 ? ` (${urlsToDelete.length} tabs deleted)` : ''}`, 'info');
                 }
             });
+        // RESTORE SAFETY WARNING MODAL LISTENERS
+        const restoreSafetyModal = document.getElementById('restoreSafetyModal');
+        const closeRestoreSafetyModalBtn = document.getElementById('closeRestoreSafetyModalBtn');
+        const restoreInNewWindowBtn = document.getElementById('restoreInNewWindowBtn');
+        const restoreInCurrentWindowBtn = document.getElementById('restoreInCurrentWindowBtn');
+
+        if (closeRestoreSafetyModalBtn) {
+            closeRestoreSafetyModalBtn.addEventListener('click', () => {
+                if (restoreSafetyModal) restoreSafetyModal.style.display = 'none';
+            });
+        }
+
+        if (restoreInNewWindowBtn) {
+            restoreInNewWindowBtn.addEventListener('click', async () => {
+                const wsId = document.getElementById('restoreSafetyWsIdInput')?.value;
+                if (restoreSafetyModal) restoreSafetyModal.style.display = 'none';
+                if (wsId) await UI.restoreInNewWindow(wsId);
+            });
+        }
+
+        if (restoreInCurrentWindowBtn) {
+            restoreInCurrentWindowBtn.addEventListener('click', async () => {
+                const wsId = document.getElementById('restoreSafetyWsIdInput')?.value;
+                if (restoreSafetyModal) restoreSafetyModal.style.display = 'none';
+                if (wsId) await UI.restoreInCurrentWindow(wsId);
+            });
         }
 
         // =========================================================================

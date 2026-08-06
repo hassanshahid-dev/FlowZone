@@ -92,7 +92,8 @@ function autoSyncActiveWorkspace() {
             const activeWs = workspaces.find(ws => ws.isActive === true);
             if (!activeWs) return;
 
-            chrome.tabs.query({}, (tabs) => {
+            const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
+            chrome.tabs.query(queryFilter, (tabs) => {
                 if (!tabs || tabs.length === 0) return;
 
                 const liveTabsList = tabs
@@ -184,7 +185,8 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
             }
 
             if (!matchedTab) {
-                chrome.tabs.query({}, (tabs) => {
+                const queryFilter = activeWs.windowId ? { windowId: activeWs.windowId } : { currentWindow: true };
+                chrome.tabs.query(queryFilter, (tabs) => {
                     const liveUrls = new Set(
                         (tabs || [])
                             .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))

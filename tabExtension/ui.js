@@ -414,18 +414,79 @@ const UI = {
         }
     },
 
-    async restoreWorkspace(ws) {
-        const id = ws._id || ws.id;
+    async restoreInNewWindow(wsId) {
+        const workspaces = await Storage.getWorkspaces();
+        const ws = workspaces.find(w => (w._id || w.id) === wsId);
+        if (!ws) return;
+
         const urlsToOpen = (ws.tabs || []).map(t => t.url).filter(Boolean);
 
+        if (typeof chrome !== 'undefined' && chrome.windows && chrome.windows.create) {
+            chrome.windows.create({ url: urlsToOpen.length > 0 ? urlsToOpen : undefined, focused: true }, async (newWindow) => {
+                const updated = workspaces.map(w => {
+                    const isTarget = (w._id || w.id) === wsId;
+                    return {
+                        ...w,
+                        isActive: isTarget,
+                        windowId: isTarget ? newWindow.id : undefined,
+                        updatedAt: new Date().toISOString()
+                    };
+                });
+                await Storage.saveWorkspaces(updated);
+                if (API.updateWorkspace) API.updateWorkspace(wsId, { isActive: true, windowId: newWindow.id });
+                this.displayWorkspaces(updated);
+                this.showToast(`Opened "${ws.name}" in a new Chrome window!`, 'success');
+            });
+        } else {
+            this.restoreInCurrentWindow(wsId);
+        }
+    },
+
+    async restoreInCurrentWindow(wsId) {
+        const workspaces = await Storage.getWorkspaces();
+        const ws = workspaces.find(w => (w._id || w.id) === wsId);
+        if (!ws) return;
+
+        const urlsToOpen = (ws.tabs || []).map(t => t.url).filter(Boolean);
         if (urlsToOpen.length > 0) {
             openTabs(urlsToOpen);
         }
 
-        API.updateWorkspace(id, { isActive: true });
-        Storage.activateWorkspace(id).then(updated => {
+        if (API.updateWorkspace) API.updateWorkspace(wsId, { isActive: true });
+        Storage.activateWorkspace(wsId).then(updated => {
             this.displayWorkspaces(updated);
             this.showToast(`Restored "${ws.name}" (${urlsToOpen.length} tabs opened)`, 'success');
+        });
+    },
+
+    async restoreWorkspace(ws) {
+        const id = ws._id || ws.id;
+        const workspaces = await Storage.getWorkspaces();
+        const otherActive = workspaces.find(w => (w._id || w.id) !== id && w.isActive);
+
+        getTabs(liveTabs => {
+            const validLiveTabs = (liveTabs || []).filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank');
+            const hasExistingTabs = validLiveTabs.length > 0;
+
+            if (otherActive || hasExistingTabs) {
+                const modal = document.getElementById('restoreSafetyModal');
+                const idInput = document.getElementById('restoreSafetyWsIdInput');
+                const msgEl = document.getElementById('restoreSafetyMessage');
+
+                if (modal && idInput && msgEl) {
+                    idInput.value = id;
+                    if (otherActive) {
+                        msgEl.textContent = `Workspace "${otherActive.name}" is already active. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
+                    } else {
+                        msgEl.textContent = `You have ${validLiveTabs.length} open tab(s) in this window. Opening "${ws.name}" in the same window will mix tabs between workspaces. We recommend opening in a new Chrome window.`;
+                    }
+                    modal.style.display = 'flex';
+                    return;
+                }
+            }
+
+            // Otherwise restore directly in current window
+            this.restoreInCurrentWindow(id);
         });
     },
 
