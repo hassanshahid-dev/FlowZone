@@ -647,6 +647,8 @@
                     UI.showToast(`Suspended workspace${urlsToDelete.length > 0 ? ` (${urlsToDelete.length} tabs deleted)` : ''}`, 'info');
                 }
             });
+        }
+
         // RESTORE SAFETY WARNING MODAL LISTENERS
         const restoreSafetyModal = document.getElementById('restoreSafetyModal');
         const closeRestoreSafetyModalBtn = document.getElementById('closeRestoreSafetyModalBtn');
