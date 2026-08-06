@@ -103,28 +103,8 @@ function autoSyncActiveWorkspace() {
                         favIconUrl: t.favIconUrl
                     }));
 
-                if (liveTabsList.length === 0) return;
-
-                const existingTabs = Array.isArray(activeWs.tabs) ? [...activeWs.tabs] : [];
-
-                // Merge newly opened tabs and update existing tab titles/urls
-                liveTabsList.forEach(liveTab => {
-                    const normLive = normalizeUrl(liveTab.url);
-                    const matchIndex = existingTabs.findIndex(t => normalizeUrl(t.url) === normLive);
-                    if (matchIndex >= 0) {
-                        if (liveTab.title && liveTab.title !== liveTab.url) {
-                            existingTabs[matchIndex].title = liveTab.title;
-                        }
-                        if (liveTab.favIconUrl) {
-                            existingTabs[matchIndex].favIconUrl = liveTab.favIconUrl;
-                        }
-                    } else {
-                        // Newly opened browser tab -> append to active workspace!
-                        existingTabs.push(liveTab);
-                    }
-                });
-
-                activeWs.tabs = existingTabs;
+                // Save only the latest stage of live open tabs (replaces old URLs on navigation)
+                activeWs.tabs = liveTabsList;
                 activeWs.isActive = true;
                 activeWs.updatedAt = new Date().toISOString();
 
@@ -136,14 +116,14 @@ function autoSyncActiveWorkspace() {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${data.token}`
                             },
-                            body: JSON.stringify({ tabs: existingTabs })
+                            body: JSON.stringify({ tabs: liveTabsList })
                         }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${data.token}`
                             },
-                            body: JSON.stringify({ tabs: existingTabs })
+                            body: JSON.stringify({ tabs: liveTabsList })
                         })).catch(() => {});
                     }
                 });
