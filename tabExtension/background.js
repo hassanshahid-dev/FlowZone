@@ -67,6 +67,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // =========================================================================
 // AUTOMATIC LIVE ACTIVE WORKSPACE SYNC
 // =========================================================================
+function normalizeUrl(url) {
+    if (!url) return '';
+    try {
+        const u = new URL(url);
+        return (u.origin + u.pathname).replace(/\/$/, '').toLowerCase();
+    } catch {
+        return url.trim().replace(/\/$/, '').toLowerCase();
+    }
+}
+
 let autoSyncDebounceTimer = null;
 
 function autoSyncActiveWorkspace() {
@@ -99,7 +109,8 @@ function autoSyncActiveWorkspace() {
 
                 // Merge newly opened tabs and update existing tab titles/urls
                 liveTabsList.forEach(liveTab => {
-                    const matchIndex = existingTabs.findIndex(t => isUrlMatch(t.url, liveTab.url));
+                    const normLive = normalizeUrl(liveTab.url);
+                    const matchIndex = existingTabs.findIndex(t => normalizeUrl(t.url) === normLive);
                     if (matchIndex >= 0) {
                         if (liveTab.title && liveTab.title !== liveTab.url) {
                             existingTabs[matchIndex].title = liveTab.title;
@@ -141,85 +152,63 @@ function autoSyncActiveWorkspace() {
     }, 300);
 }
 
-// Tab Cache & Pending Deletion Confirmation Map
-const tabCache = new Map();
-const pendingTabDeletions = new Map();
-
-function updateTabCache() {
-    if (typeof chrome === 'undefined' || !chrome.tabs) return;
-    chrome.tabs.query({}, (tabs) => {
-        if (!tabs) return;
-        tabs.forEach(t => {
-            if (t.id && t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank') {
-                tabCache.set(t.id, { title: t.title || t.url, url: t.url });
-            }
-        });
-    });
-}
-
-updateTabCache();
-
 if (typeof chrome !== 'undefined' && chrome.tabs) {
-    chrome.tabs.onCreated.addListener((tab) => {
-        if (tab.id && tab.url) tabCache.set(tab.id, { title: tab.title || tab.url, url: tab.url });
-        autoSyncActiveWorkspace();
-    });
-
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-        if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://') && tab.url !== 'about:blank') {
-            tabCache.set(tabId, { title: tab.title || tab.url, url: tab.url });
-        }
+    chrome.tabs.onCreated.addListener(autoSyncActiveWorkspace);
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
         if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
             autoSyncActiveWorkspace();
         }
     });
 
-    chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
-        const closedTab = tabCache.get(tabId);
-        tabCache.delete(tabId);
+    chrome.tabs.onRemoved.addListener(() => {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local || !chrome.tabs) return;
 
-        if (closedTab && closedTab.url) {
-            chrome.storage.local.get(['workSpaces', 'token'], (data) => {
-                const workspaces = data.workSpaces || [];
-                if (workspaces.length === 0) return;
+        chrome.storage.local.get(['workSpaces', 'token'], (data) => {
+            const workspaces = data.workSpaces || [];
+            if (workspaces.length === 0) return;
 
-                const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
+            const activeWs = workspaces.find(ws => ws.isActive) || workspaces[0];
+            if (!activeWs || !Array.isArray(activeWs.tabs) || activeWs.tabs.length === 0) return;
 
-                if (activeWs && Array.isArray(activeWs.tabs)) {
-                    const matchIndex = activeWs.tabs.findIndex(t => isUrlMatch(t.url, closedTab.url));
+            chrome.tabs.query({}, (tabs) => {
+                const liveUrls = new Set(
+                    (tabs || [])
+                        .filter(t => t.url && !t.url.startsWith('chrome://') && !t.url.startsWith('chrome-extension://') && t.url !== 'about:blank' && !t.url.includes('newtab') && !t.url.includes('new-tab-page'))
+                        .map(t => normalizeUrl(t.url))
+                );
 
-                    if (matchIndex >= 0) {
-                        // Delete closed tab immediately from active workspace
-                        activeWs.tabs.splice(matchIndex, 1);
-                        activeWs.updatedAt = new Date().toISOString();
+                const originalCount = activeWs.tabs.length;
+                activeWs.tabs = activeWs.tabs.filter(t => liveUrls.has(normalizeUrl(t.url)));
 
-                        chrome.storage.local.set({ workSpaces: workspaces }, () => {
-                            if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
-                                fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                                    method: 'PUT',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${data.token}`
-                                    },
-                                    body: JSON.stringify({ tabs: activeWs.tabs })
-                                }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
-                                    method: 'PUT',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${data.token}`
-                                    },
-                                    body: JSON.stringify({ tabs: activeWs.tabs })
-                                })).catch(() => {});
-                            }
+                if (activeWs.tabs.length !== originalCount) {
+                    activeWs.updatedAt = new Date().toISOString();
 
-                            chrome.action.setBadgeText({ text: '✓' });
-                            chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
-                            setTimeout(() => chrome.action.setBadgeText({ text: '' }), 1500);
-                        });
-                    }
+                    chrome.storage.local.set({ workSpaces: workspaces }, () => {
+                        if (data.token && activeWs._id && !activeWs._id.startsWith('local_')) {
+                            fetch(`https://flowzone-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${data.token}`
+                                },
+                                body: JSON.stringify({ tabs: activeWs.tabs })
+                            }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/api/workspaces/${activeWs._id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${data.token}`
+                                },
+                                body: JSON.stringify({ tabs: activeWs.tabs })
+                            })).catch(() => {});
+                        }
+
+                        chrome.action.setBadgeText({ text: '✓' });
+                        chrome.action.setBadgeBackgroundColor({ color: '#EF4444' });
+                        setTimeout(() => chrome.action.setBadgeText({ text: '' }), 1500);
+                    });
                 }
             });
-        }
+        });
     });
 
     chrome.tabs.onReplaced.addListener(autoSyncActiveWorkspace);
