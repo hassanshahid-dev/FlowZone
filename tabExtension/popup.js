@@ -11,7 +11,7 @@
     async function autoSyncTokenFromDashboard() {
         return new Promise((resolve) => {
             if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query && chrome.scripting) {
-                chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*', '*://tabflow-dashboard-eight.vercel.app/*'] }, (tabs) => {
+                chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*'] }, (tabs) => {
                     if (tabs && tabs.length > 0) {
                         chrome.scripting.executeScript({
                             target: { tabId: tabs[0].id },
@@ -324,7 +324,7 @@
 
                     // Broadcast logout to open dashboard web tabs
                     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.scripting) {
-                        chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*', '*://tabflow-dashboard-eight.vercel.app/*'] }, (tabs) => {
+                        chrome.tabs.query({ url: ['*://flowzone-dashboard.vercel.app/*'] }, (tabs) => {
                             tabs.forEach(tab => {
                                 chrome.scripting.executeScript({
                                     target: { tabId: tab.id },

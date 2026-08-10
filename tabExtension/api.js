@@ -1,5 +1,4 @@
 const BASE_URL = `https://flowzone-backend-api.vercel.app/api`;
-const FALLBACK_BASE_URL = `https://tabflow-backend-api.vercel.app/api`;
 
 const API = {
     async getToken() {
@@ -21,7 +20,7 @@ const API = {
             const res = await fetch(`https://flowzone-backend-api.vercel.app/health`, {
                 method: 'GET',
                 signal: controller.signal
-            }).catch(() => fetch(`https://tabflow-backend-api.vercel.app/health`, { method: 'GET', signal: controller.signal }));
+            });
             clearTimeout(timeoutId);
             return !!(res && res.ok);
         } catch {

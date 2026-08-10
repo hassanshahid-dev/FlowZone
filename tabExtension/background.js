@@ -33,7 +33,7 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Context Menu Action Listener
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if ((info.menuItemId === 'save-page-to-flowzone' || info.menuItemId === 'save-page-to-tabflow') && tab) {
+    if (info.menuItemId === 'save-page-to-flowzone' && tab) {
         chrome.storage.local.get('workSpaces', (data) => {
             const workspaces = data.workSpaces || [];
             let quickWs = workspaces.find(ws => ws.name === 'Quick Saved Pages');
