@@ -44,6 +44,8 @@ const ChromeIcon = ({ size = 18 }) => (
   </svg>
 );
 
+const CHROME_WEB_STORE_URL = "https://chromewebstore.google.com/detail/flowzone-ai-workspace-tab/hmhbhfkgpofgbnflagbafhljfmchjdeb?utm_source=item-share-cb";
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -192,13 +194,15 @@ export default function Landing() {
                 Sign In
               </Link>
             )}
-            <button
-              onClick={() => setShowInstallModal(true)}
+            <a
+              href={CHROME_WEB_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition shadow-sm"
             >
               <ChromeIcon size={16} />
               Get Extension
-            </button>
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -226,9 +230,15 @@ export default function Landing() {
             </nav>
             <div className="flex flex-col gap-3 pt-2">
               <button onClick={() => { setMobileMenuOpen(false); navigate('/login'); }} className="w-full py-3 bg-slate-100 text-slate-800 font-semibold text-sm rounded-full">Sign In</button>
-              <button onClick={() => { setMobileMenuOpen(false); setShowInstallModal(true); }} className="w-full py-3 bg-blue-600 text-white font-semibold text-sm rounded-full flex items-center justify-center gap-2">
+              <a
+                href={CHROME_WEB_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3 bg-blue-600 text-white font-semibold text-sm rounded-full flex items-center justify-center gap-2"
+              >
                 <ChromeIcon size={18} /> Get Free Extension
-              </button>
+              </a>
             </div>
           </div>
         )}
@@ -250,13 +260,15 @@ export default function Landing() {
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12 px-4">
-          <button
-            onClick={() => setShowInstallModal(true)}
+          <a
+            href={CHROME_WEB_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full sm:w-auto inline-flex items-center justify-center bg-black hover:bg-neutral-800 text-white font-medium text-base px-8 py-4 rounded-full transition shadow-md gap-3"
           >
             <ChromeIcon size={20} />
             Try FlowZone Free
-          </button>
+          </a>
           <button
             onClick={() => navigate('/login')}
             className="w-full sm:w-auto inline-flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-base px-7 py-4 rounded-full transition border border-slate-200 gap-2 cursor-pointer shadow-sm"
@@ -557,9 +569,14 @@ export default function Landing() {
                 <li className="flex items-center gap-3"><Check size={16} className="text-emerald-600" /> Chrome Side Panel Integration</li>
               </ul>
             </div>
-            <button onClick={() => setShowInstallModal(true)} className="w-full text-center py-3.5 bg-black hover:bg-neutral-800 text-white font-medium text-sm rounded-full transition">
+            <a
+              href={CHROME_WEB_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-center py-3.5 bg-black hover:bg-neutral-800 text-white font-medium text-sm rounded-full transition block"
+            >
               Get Started Free
-            </button>
+            </a>
           </div>
 
           <div className="bg-white border-2 border-blue-600 p-6 sm:p-8 rounded-3xl flex flex-col justify-between relative shadow-lg">
@@ -648,31 +665,30 @@ export default function Landing() {
             <div className="flex items-center gap-3 mb-4">
               <TabFlowLogoSvg className="w-10 h-8" />
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Install FlowZone Extension</h3>
-                <span className="text-xs text-slate-500">Chrome Web Store • Free Download</span>
+                <h3 className="text-lg font-bold text-slate-900">FlowZone Extension</h3>
+                <span className="text-xs text-slate-500">Official Chrome Web Store Listing</span>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              Load the unpacked extension directory into Chrome from:
-              <br />
-              <code className="block bg-slate-100 p-2 rounded-lg text-slate-800 text-[11px] font-mono mt-2 overflow-x-auto">
-                /tabExtension
-              </code>
+              Install FlowZone directly from the official Google Chrome Web Store to manage workspaces, save RAM memory, and sync tabs across devices.
             </p>
 
             <div className="space-y-3">
-              <button
-                onClick={() => { triggerToast('Extension path copied!'); setShowInstallModal(false); }}
+              <a
+                href={CHROME_WEB_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowInstallModal(false)}
                 className="w-full py-3 bg-black hover:bg-neutral-800 text-white font-bold text-sm rounded-full transition flex items-center justify-center gap-2"
               >
-                <Copy size={16} /> Copy Local Extension Path
-              </button>
+                <ChromeIcon size={18} /> Add to Chrome (Web Store)
+              </a>
               <button
-                onClick={() => setShowInstallModal(false)}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-full transition"
+                onClick={() => { navigator.clipboard.writeText(CHROME_WEB_STORE_URL); triggerToast('Chrome Web Store link copied!'); setShowInstallModal(false); }}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-full transition flex items-center justify-center gap-2"
               >
-                Close Window
+                <Copy size={16} /> Copy Chrome Web Store Link
               </button>
             </div>
           </div>
@@ -713,7 +729,14 @@ export default function Landing() {
           <div className="flex gap-6 font-medium">
             <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Privacy Policy</Link>
             <Link to="/terms" onClick={() => window.scrollTo(0, 0)} className="hover:text-black transition">Terms of Service</Link>
-            <button onClick={() => setShowInstallModal(true)} className="hover:text-black transition">Chrome Web Store</button>
+            <a
+              href={CHROME_WEB_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-black transition"
+            >
+              Chrome Web Store
+            </a>
           </div>
         </div>
       </footer>
