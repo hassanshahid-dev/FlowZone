@@ -66,8 +66,6 @@ export default function Landing() {
   const [videoTimestamp, setVideoTimestamp] = useState('0:05');
   const [videoTitle, setVideoTitle] = useState('Auto-Detecting 40 Open Tabs');
 
-  // Modal State
-  const [showInstallModal, setShowInstallModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -649,51 +647,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 9. INSTALL MODAL OVERLAY                                                  */}
-      {/* ========================================================================= */}
-      {showInstallModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full relative shadow-2xl text-left">
-            <button
-              onClick={() => setShowInstallModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-black"
-            >
-              <CloseIcon size={20} />
-            </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <TabFlowLogoSvg className="w-10 h-8" />
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">FlowZone Extension</h3>
-                <span className="text-xs text-slate-500">Official Chrome Web Store Listing</span>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              Install FlowZone directly from the official Google Chrome Web Store to manage workspaces, save RAM memory, and sync tabs across devices.
-            </p>
-
-            <div className="space-y-3">
-              <a
-                href={CHROME_WEB_STORE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowInstallModal(false)}
-                className="w-full py-3 bg-black hover:bg-neutral-800 text-white font-bold text-sm rounded-full transition flex items-center justify-center gap-2"
-              >
-                <ChromeIcon size={18} /> Add to Chrome (Web Store)
-              </a>
-              <button
-                onClick={() => { navigator.clipboard.writeText(CHROME_WEB_STORE_URL); triggerToast('Chrome Web Store link copied!'); setShowInstallModal(false); }}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-full transition flex items-center justify-center gap-2"
-              >
-                <Copy size={16} /> Copy Chrome Web Store Link
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* 10. FOOTER                                                                */}
