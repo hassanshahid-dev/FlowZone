@@ -37,6 +37,15 @@ const AuthSyncListener = () => {
     return () => window.removeEventListener('message', handleMessage);
   }, [navigate, location]);
 
+  useEffect(() => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_title: document.title
+      });
+    }
+  }, [location]);
+
   return null;
 };
 
