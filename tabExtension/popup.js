@@ -766,40 +766,6 @@
             });
         }
 
-        // Groq API Key Settings Handler
-        const groqInput = document.getElementById('groqApiKeyInput');
-        const groqStatus = document.getElementById('groqKeyStatus');
-        const savedGroqKey = (typeof localStorage !== 'undefined' && localStorage.getItem('GROQ_API_KEY')) || '';
-
-        if (groqInput) {
-            groqInput.value = savedGroqKey;
-        }
-        if (groqStatus) {
-            groqStatus.textContent = savedGroqKey
-                ? '✅ Custom Groq API Key Active'
-                : '✨ FlowZone Free Groq Llama 3.1 AI Active (Default)';
-            groqStatus.style.color = '#10B981';
-        }
-
-        document.getElementById('saveGroqKeyBtn')?.addEventListener('click', () => {
-            const keyVal = groqInput?.value.trim() || '';
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('GROQ_API_KEY', keyVal);
-            }
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                chrome.storage.local.set({ GROQ_API_KEY: keyVal });
-            }
-
-            if (groqStatus) {
-                groqStatus.textContent = keyVal
-                    ? '✅ Custom Groq API Key Active'
-                    : '✨ FlowZone Free Groq Llama 3.1 AI Active (Default)';
-                groqStatus.style.color = '#10B981';
-            }
-
-            UI.showToast(keyVal ? 'Custom Groq API Key saved successfully!' : 'Reset to default FlowZone AI Engine', 'success');
-        });
-
         document.getElementById('clearLocalDataBtn')?.addEventListener('click', async () => {
             if (confirm('Are you sure you want to clear local storage cache?')) {
                 await Storage.saveWorkspaces([]);

@@ -817,13 +817,13 @@ const UI = {
         }
 
         const engineBadgeText = engineUsed
-            ? `✨ Powered by ${engineUsed} (Online)`
-            : '⚡ Offline Local Rule AI Engine (Configure Groq Key in Settings for Llama 3.1 AI)';
+            ? `✨ Powered by ${engineUsed}`
+            : '⚡ Offline Local Rule Engine';
 
         container.innerHTML = `
             <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; color: ${engineUsed ? '#10B981' : '#3B82F6'}; font-family: monospace; display: flex; align-items: center; justify-content: space-between;">
                 <span>${engineBadgeText}</span>
-                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10px;">100% Free API</span>
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10px;">Free Feature</span>
             </div>
         `;
 
