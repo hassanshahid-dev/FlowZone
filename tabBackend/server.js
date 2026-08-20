@@ -4,6 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import authRoutes from './routes/auth.js'
 import workspaceRoutes from './routes/workspaces.js';
+import aiRoutes from './routes/ai.js';
 import { apiLimiter, authLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -71,6 +72,7 @@ app.use(connectDb);
 // Routes (Protected with Rate Limiters)
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/workspaces', apiLimiter, workspaceRoutes);
+app.use('/api/ai', apiLimiter, aiRoutes);
 
 // Local Development Server Listener
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {

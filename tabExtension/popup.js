@@ -776,9 +776,9 @@
         }
         if (groqStatus) {
             groqStatus.textContent = savedGroqKey
-                ? '✅ Groq Llama 3.1 AI Active'
-                : '⚠️ No key set (using offline rule fallback engine)';
-            groqStatus.style.color = savedGroqKey ? '#10B981' : '#F59E0B';
+                ? '✅ Custom Groq API Key Active'
+                : '✨ FlowZone Free Groq Llama 3.1 AI Active (Default)';
+            groqStatus.style.color = '#10B981';
         }
 
         document.getElementById('saveGroqKeyBtn')?.addEventListener('click', () => {
@@ -792,12 +792,12 @@
 
             if (groqStatus) {
                 groqStatus.textContent = keyVal
-                    ? '✅ Groq Llama 3.1 AI Active'
-                    : '⚠️ No key set (using offline rule fallback engine)';
-                groqStatus.style.color = keyVal ? '#10B981' : '#F59E0B';
+                    ? '✅ Custom Groq API Key Active'
+                    : '✨ FlowZone Free Groq Llama 3.1 AI Active (Default)';
+                groqStatus.style.color = '#10B981';
             }
 
-            UI.showToast(keyVal ? 'Groq API Key saved successfully!' : 'Groq API Key cleared', 'success');
+            UI.showToast(keyVal ? 'Custom Groq API Key saved successfully!' : 'Reset to default FlowZone AI Engine', 'success');
         });
 
         document.getElementById('clearLocalDataBtn')?.addEventListener('click', async () => {

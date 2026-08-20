@@ -671,8 +671,45 @@ const UI = {
         };
         let engineUsed = null;
 
-        // 1. Try Groq Llama 3.1 API if online & key available
-        if (isOnline && groqApiKey) {
+        // 1. Primary: Use Backend AI Proxy (Free out-of-the-box for all extension users via Groq)
+        if (isOnline) {
+            try {
+                const tabPayload = tabs.map((t, idx) => ({ index: idx, title: t.title || t.url, url: t.url }));
+                let response = null;
+
+                try {
+                    response = await fetch('https://flowzone-backend-api.vercel.app/api/ai/categorize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tabs: tabPayload })
+                    });
+                } catch {
+                    // Local dev fallback
+                    response = await fetch('http://localhost:5000/api/ai/categorize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tabs: tabPayload })
+                    });
+                }
+
+                if (response && response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.categories) {
+                        tabs.forEach((tab, idx) => {
+                            const cat = data.categories[idx] || data.categories[String(idx)] || data.categories[tab.title] || 'General Web';
+                            const validCategory = categories[cat] ? cat : 'General Web';
+                            categories[validCategory].push(tab);
+                        });
+                        engineUsed = data.engine || 'Groq Llama 3.1 AI Cloud (Free)';
+                    }
+                }
+            } catch (err) {
+                console.warn('Backend Groq AI call failed, falling back to direct key / offline rules:', err);
+            }
+        }
+
+        // 2. Secondary: Direct Groq API call if custom user key is configured in settings
+        if (!engineUsed && isOnline && groqApiKey) {
             try {
                 const tabPayload = tabs.map((t, idx) => ({ index: idx, title: t.title || t.url, url: t.url }));
                 const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -708,7 +745,7 @@ const UI = {
                         const validCategory = categories[cat] ? cat : 'General Web';
                         categories[validCategory].push(tab);
                     });
-                    engineUsed = 'Groq Llama 3.1 AI';
+                    engineUsed = 'Custom Groq Llama 3.1 AI';
                 }
             } catch (err) {
                 console.warn('Groq API failed, falling back:', err);
