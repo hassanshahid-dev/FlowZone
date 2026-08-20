@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TabFlowLogoSvg } from './Landing';
 import { ArrowLeft, Lock, Mail, Eye, EyeOff, ShieldCheck, RefreshCw, KeyRound } from 'lucide-react';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Login() {
   const [step, setStep] = useState(1); // Step 1: Login Form, Step 2: 2FA OTP Verification
@@ -133,7 +134,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#1F1F1F] font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col justify-between">
+    <div className="min-h-screen bg-white text-[#1F1F1F] font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col justify-between relative">
+      {loading && (
+        <LoadingScreen fullScreen message={step === 1 ? "Verifying user credentials & account data..." : "Authenticating security 2FA code..."} />
+      )}
       
       {/* Top Header Navigation */}
       <header className="px-8 py-6 flex items-center justify-between border-b border-slate-100">

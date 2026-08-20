@@ -10,6 +10,23 @@ function isUrlMatch(url1, url2) {
 }
 
 const UI = {
+    lastAiCallTime: 0,
+
+    showLoading(containerId, message = 'Loading data...') {
+        const container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+        if (!container) return;
+        container.innerHTML = `
+            <div class="loading-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 16px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 16px; margin: 12px 0;">
+                <div style="position: relative; width: 44px; height: 44px; margin-bottom: 14px;">
+                    <div style="position: absolute; inset: 0; border-radius: 50%; background: rgba(59, 130, 246, 0.25); filter: blur(8px); animation: pulse 1.5s infinite;"></div>
+                    <div style="position: relative; width: 44px; height: 44px; border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                </div>
+                <h4 style="font-size: 13px; font-weight: 700; color: #F8FAFC; margin-bottom: 4px; letter-spacing: 0.3px;">${message}</h4>
+                <p style="font-size: 11px; color: #94A3B8; margin: 0;">Syncing workspaces & tab memory</p>
+            </div>
+        `;
+    },
+
     // =========================================================================
     // 1. WORKSPACES LIST RENDERER
     // =========================================================================
@@ -90,6 +107,12 @@ const UI = {
             const card = this.createWorkspaceCard(ws);
             listContainer.appendChild(card);
         });
+    },
+
+    showStatsLoading() {
+        const ramEl = document.getElementById('totalRamSaved');
+        if (ramEl) ramEl.textContent = 'Calculating RAM...';
+        this.showLoading('workspacesList', 'Syncing workspaces & calculating RAM savings...');
     },
 
     updateHeaderStats(ramMB, activeCount, suspendedCount, totalTabs) {
@@ -617,7 +640,17 @@ const UI = {
     async renderAiCategorization(tabs) {
         const container = document.getElementById('aiPreviewContainer');
         if (!container) return;
-        container.innerHTML = '<div class="empty-state"><p>Analyzing tabs with AI Engine...</p></div>';
+
+        const now = Date.now();
+        const cooldownMs = 4000;
+        if (now - this.lastAiCallTime < cooldownMs) {
+            const waitSec = Math.ceil((cooldownMs - (now - this.lastAiCallTime)) / 1000);
+            this.showToast(`Rate limit: Please wait ${waitSec}s before running AI auto-group again.`, 'info');
+            return;
+        }
+        this.lastAiCallTime = now;
+
+        this.showLoading('aiPreviewContainer', 'Analyzing tabs with AI Engine...');
 
         if (!tabs || tabs.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>No open tabs available to analyze.</p></div>`;
@@ -625,6 +658,7 @@ const UI = {
         }
 
         const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+        const groqApiKey = (typeof localStorage !== 'undefined' && localStorage.getItem('GROQ_API_KEY')) || '';
         const geminiApiKey = (typeof localStorage !== 'undefined' && localStorage.getItem('GEMINI_API_KEY')) || '';
 
         let categories = {
@@ -635,10 +669,54 @@ const UI = {
             'Shopping & Finance': [],
             'General Web': []
         };
-        let isGeminiUsed = false;
+        let engineUsed = null;
 
-        // Try Google Gemini 1.5 Flash API if online & key available
-        if (isOnline && geminiApiKey) {
+        // 1. Try Groq Llama 3.1 API if online & key available
+        if (isOnline && groqApiKey) {
+            try {
+                const tabPayload = tabs.map((t, idx) => ({ index: idx, title: t.title || t.url, url: t.url }));
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${groqApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-8b-instant',
+                        response_format: { type: "json_object" },
+                        temperature: 0.1,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are an AI tab classifier. Categorize tabs into json mapping each tab index (0, 1, 2...) to one of these exact category names: "Code & Engineering", "Documentation & Docs", "Media & Entertainment", "Social & Messaging", "Shopping & Finance", "General Web". Return JSON format: {"0": "Category Name", "1": "Category Name"}'
+                            },
+                            {
+                                role: 'user',
+                                content: `Categorize these tabs: ${JSON.stringify(tabPayload)}`
+                            }
+                        ]
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const contentStr = data?.choices?.[0]?.message?.content || '';
+                    const parsedMap = JSON.parse(contentStr);
+
+                    tabs.forEach((tab, idx) => {
+                        const cat = parsedMap[idx] || parsedMap[String(idx)] || parsedMap[tab.title] || 'General Web';
+                        const validCategory = categories[cat] ? cat : 'General Web';
+                        categories[validCategory].push(tab);
+                    });
+                    engineUsed = 'Groq Llama 3.1 AI';
+                }
+            } catch (err) {
+                console.warn('Groq API failed, falling back:', err);
+            }
+        }
+
+        // 2. Try Google Gemini API if online, key available, and Groq not used
+        if (!engineUsed && isOnline && geminiApiKey) {
             try {
                 const tabTitles = tabs.map(t => ({ id: t.id, title: t.title, url: t.url }));
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
@@ -661,19 +739,19 @@ const UI = {
                         const parsedMap = JSON.parse(jsonMatch[0]);
                         tabs.forEach((tab, idx) => {
                             const cat = parsedMap[idx] || parsedMap[tab.title] || 'General Web';
-                            if (!categories[cat]) categories[cat] = [];
-                            categories[cat].push(tab);
+                            const validCategory = categories[cat] ? cat : 'General Web';
+                            categories[validCategory].push(tab);
                         });
-                        isGeminiUsed = true;
+                        engineUsed = 'Gemini 1.5 Flash Cloud AI';
                     }
                 }
             } catch (err) {
-                console.log('Gemini API fallback to offline rules:', err);
+                console.warn('Gemini API fallback to offline rules:', err);
             }
         }
 
-        // Offline Rule-based Local AI Fallback Engine
-        if (!isGeminiUsed) {
+        // 3. Offline Rule-based Local AI Fallback Engine
+        if (!engineUsed) {
             categories = {
                 'Code & Engineering': [],
                 'Documentation & Docs': [],
@@ -701,28 +779,14 @@ const UI = {
             });
         }
 
-        const session = await Auth.getUser();
-        const isPro = session.user && session.user.plan === 'pro';
-
-        if (!isPro) {
-            container.innerHTML = `
-                <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 24px 20px; text-align: center; margin: 12px 0;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">✨ 🔒</div>
-                    <h3 style="color: #3B82F6; font-weight: 700; font-size: 15px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Pro Plan Required</h3>
-                    <p style="color: #94A3B8; font-size: 12px; margin-bottom: 16px; line-height: 1.5;">
-                        <strong>Unlimited AI Tab Categorization</strong> & <strong>Unlimited Cloud Workspace Sync</strong> are Pro Member features ($4.99/mo).
-                    </p>
-                    <button onclick="window.open('https://flowzone-dashboard.vercel.app/upgrade', '_blank')" style="background: linear-gradient(135deg, #2563EB, #1D4ED8); color: #FFF; font-weight: 800; border: none; padding: 12px 24px; border-radius: 9999px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px;">
-                        Upgrade to Pro ($4.99/mo) ✨
-                    </button>
-                </div>
-            `;
-            return;
-        }
+        const engineBadgeText = engineUsed
+            ? `✨ Powered by ${engineUsed} (Online)`
+            : '⚡ Offline Local Rule AI Engine (Configure Groq Key in Settings for Llama 3.1 AI)';
 
         container.innerHTML = `
-            <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; color: ${isGeminiUsed ? '#10B981' : '#3B82F6'}; font-family: monospace;">
-                ${isGeminiUsed ? '✨ Powered by Gemini 1.5 Flash Cloud AI (Online)' : '⚡ Offline Local Rule AI Engine (0ms Latency)'}
+            <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; color: ${engineUsed ? '#10B981' : '#3B82F6'}; font-family: monospace; display: flex; align-items: center; justify-content: space-between;">
+                <span>${engineBadgeText}</span>
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10px;">100% Free API</span>
             </div>
         `;
 

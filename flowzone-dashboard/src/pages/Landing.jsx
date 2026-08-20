@@ -561,6 +561,7 @@ export default function Landing() {
               <div className="text-4xl font-extrabold text-black mb-6">$0 <span className="text-xs font-normal text-slate-500">forever</span></div>
 
               <ul className="space-y-3 text-sm text-slate-700 mb-8">
+                <li className="flex items-center gap-3"><Check size={16} className="text-emerald-600" /> Free AI Tab Auto-Grouping</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-emerald-600" /> 5 Cloud-Synced Workspaces</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-emerald-600" /> Unlimited Local Workspaces</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-emerald-600" /> 1-Click Tab Suspension & RAM Saver</li>
@@ -590,7 +591,7 @@ export default function Landing() {
                 <li className="flex items-center gap-3"><Check size={16} className="text-blue-600" /> Everything in Free Plan</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-blue-600" /> Unlimited Cloud Workspace Sync</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-blue-600" /> Full Web Dashboard Access</li>
-                <li className="flex items-center gap-3"><Check size={16} className="text-blue-600" /> Unlimited AI Tab Categorization</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-blue-600" /> Priority Gemini 1.5 Cloud Processing</li>
               </ul>
             </div>
             <button onClick={() => navigate('/upgrade')} className="w-full text-center py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-full transition shadow-md">

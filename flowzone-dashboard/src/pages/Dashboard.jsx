@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TabFlowLogoSvg } from './Landing';
 import { Folder, Layers, ShieldCheck, HardDrive, RefreshCw, LogOut, ExternalLink, Plus, X, Globe, LayoutDashboard, Pencil, Trash2, Play, Pause } from 'lucide-react';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -418,7 +419,16 @@ export default function Dashboard() {
               <span>Saved Workspaces</span>
               <Folder size={16} className="text-blue-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white">{workspaces.length}</div>
+            <div className="text-3xl font-extrabold text-white">
+              {loading && workspaces.length === 0 ? (
+                <div className="flex items-center gap-2 py-1">
+                  <RefreshCw size={20} className="animate-spin text-blue-400" />
+                  <span className="text-xs text-slate-400 font-normal">Loading...</span>
+                </div>
+              ) : (
+                workspaces.length
+              )}
+            </div>
             <span className="text-[10px] text-slate-500 mt-1 block">Synced with MongoDB Cloud Atlas</span>
           </div>
 
@@ -428,7 +438,14 @@ export default function Dashboard() {
               <Layers size={16} className="text-purple-400" />
             </div>
             <div className="text-3xl font-extrabold text-white">
-              {workspaces.reduce((acc, ws) => acc + (ws.tabs?.length || 0), 0)} Tabs
+              {loading && workspaces.length === 0 ? (
+                <div className="flex items-center gap-2 py-1">
+                  <RefreshCw size={20} className="animate-spin text-purple-400" />
+                  <span className="text-xs text-slate-400 font-normal">Loading...</span>
+                </div>
+              ) : (
+                `${workspaces.reduce((acc, ws) => acc + (ws.tabs?.length || 0), 0)} Tabs`
+              )}
             </div>
             <span className="text-[10px] text-slate-500 mt-1 block">Organized across workspaces</span>
           </div>
@@ -439,27 +456,34 @@ export default function Dashboard() {
               <HardDrive size={16} className="text-emerald-400" />
             </div>
             <div className="text-3xl font-extrabold text-emerald-400">
-              {(() => {
-                let totalMb = 0;
-                workspaces.forEach(ws => {
-                  if (ws.isActive === false) {
-                    (ws.tabs || []).forEach(t => {
-                      if (t.memoryMb && typeof t.memoryMb === 'number') {
-                        totalMb += t.memoryMb;
-                      } else if (t.url) {
-                        const u = t.url.toLowerCase();
-                        if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) totalMb += 380;
-                        else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) totalMb += 290;
-                        else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) totalMb += 210;
-                        else totalMb += 120;
-                      } else {
-                        totalMb += 120;
-                      }
-                    });
-                  }
-                });
-                return totalMb >= 1024 ? (totalMb / 1024).toFixed(2) + ' GB' : totalMb + ' MB';
-              })()}
+              {loading && workspaces.length === 0 ? (
+                <div className="flex items-center gap-2 py-1 text-emerald-400/90 text-sm font-semibold animate-pulse">
+                  <RefreshCw size={18} className="animate-spin text-emerald-400" />
+                  <span>Calculating RAM...</span>
+                </div>
+              ) : (
+                (() => {
+                  let totalMb = 0;
+                  workspaces.forEach(ws => {
+                    if (ws.isActive === false) {
+                      (ws.tabs || []).forEach(t => {
+                        if (t.memoryMb && typeof t.memoryMb === 'number') {
+                          totalMb += t.memoryMb;
+                        } else if (t.url) {
+                          const u = t.url.toLowerCase();
+                          if (u.includes('youtube') || u.includes('video') || u.includes('netflix')) totalMb += 380;
+                          else if (u.includes('figma') || u.includes('canva') || u.includes('docs.google')) totalMb += 290;
+                          else if (u.includes('gmail') || u.includes('github') || u.includes('linkedin')) totalMb += 210;
+                          else totalMb += 120;
+                        } else {
+                          totalMb += 120;
+                        }
+                      });
+                    }
+                  });
+                  return totalMb >= 1024 ? (totalMb / 1024).toFixed(2) + ' GB' : totalMb + ' MB';
+                })()
+              )}
             </div>
             <span className="text-[10px] text-emerald-500/80 mt-1 block">Reclaimed from suspended workspaces</span>
           </div>
@@ -472,10 +496,7 @@ export default function Dashboard() {
           </h2>
 
           {loading && workspaces.length === 0 ? (
-            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-400 text-sm">
-              <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-blue-400" />
-              Loading workspaces from cloud...
-            </div>
+            <LoadingScreen message="Fetching cloud workspaces & syncing active browser tabs..." />
           ) : workspaces.length === 0 ? (
             <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center">
               <Folder size={36} className="mx-auto mb-3 text-slate-600" />

@@ -8,6 +8,7 @@
 
 ## ✨ Features
 
+- 🤖 **100% Free AI Tab Auto-Grouping**: Automatically categorize open browser tabs into smart workspaces (Code & Engineering, Documentation, Media, Social, Shopping, General Web) using local AI rules or Google Gemini 1.5 Flash API — 100% free and accessible for all users.
 - ⚡ **Instant Workspace Organization**: Group tabs into color-coded workspaces (Indigo, Blue, Green, Amber, Rose).
 - 🧠 **Dual-Option RAM Memory Saver (Suspend Flow)**:
   - **Suspend (Close) Selected Browser Tabs**: Safely close open tabs to free RAM memory with a single click (defaults to *Select All*).

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "FlowZone - AI Workspace & Tab Manager",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "description": "Smart AI workspace manager, tab suspension, and RAM saver for Chrome.",
 
     "permissions": [
@@ -14,7 +14,9 @@
 
     "host_permissions": [
         "https://flowzone-backend-api.vercel.app/*",
-        "https://flowzone-dashboard.vercel.app/*"
+        "https://flowzone-dashboard.vercel.app/*",
+        "https://api.groq.com/*",
+        "https://generativelanguage.googleapis.com/*"
     ],
 
     "background": {

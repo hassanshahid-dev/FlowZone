@@ -40,6 +40,8 @@
     }
 
     async function initApp() {
+        UI.showStatsLoading();
+
         // Auto-sync token from active dashboard tab if missing
         let session = await Auth.getUser();
         if (!session.token) {
@@ -763,6 +765,40 @@
                 reader.readAsText(file);
             });
         }
+
+        // Groq API Key Settings Handler
+        const groqInput = document.getElementById('groqApiKeyInput');
+        const groqStatus = document.getElementById('groqKeyStatus');
+        const savedGroqKey = (typeof localStorage !== 'undefined' && localStorage.getItem('GROQ_API_KEY')) || '';
+
+        if (groqInput) {
+            groqInput.value = savedGroqKey;
+        }
+        if (groqStatus) {
+            groqStatus.textContent = savedGroqKey
+                ? '✅ Groq Llama 3.1 AI Active'
+                : '⚠️ No key set (using offline rule fallback engine)';
+            groqStatus.style.color = savedGroqKey ? '#10B981' : '#F59E0B';
+        }
+
+        document.getElementById('saveGroqKeyBtn')?.addEventListener('click', () => {
+            const keyVal = groqInput?.value.trim() || '';
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('GROQ_API_KEY', keyVal);
+            }
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({ GROQ_API_KEY: keyVal });
+            }
+
+            if (groqStatus) {
+                groqStatus.textContent = keyVal
+                    ? '✅ Groq Llama 3.1 AI Active'
+                    : '⚠️ No key set (using offline rule fallback engine)';
+                groqStatus.style.color = keyVal ? '#10B981' : '#F59E0B';
+            }
+
+            UI.showToast(keyVal ? 'Groq API Key saved successfully!' : 'Groq API Key cleared', 'success');
+        });
 
         document.getElementById('clearLocalDataBtn')?.addEventListener('click', async () => {
             if (confirm('Are you sure you want to clear local storage cache?')) {

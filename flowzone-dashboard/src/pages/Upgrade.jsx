@@ -53,7 +53,7 @@ export default function Upgrade() {
             Upgrade to Pro
           </h2>
           <p className="text-sm text-[#5F6368] mb-8">
-            Unlock unlimited Gemini 1.5 AI tab categorization, priority cloud workspace sync, and zero tab memory limits.
+            Unlock unlimited multi-browser cloud workspace syncing, priority Gemini 1.5 Cloud AI processing, and zero tab workspace limits.
           </p>
 
           <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-8">
